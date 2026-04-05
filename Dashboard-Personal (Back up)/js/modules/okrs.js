@@ -22,7 +22,11 @@ const CATEGORY_LABELS = {
   personal: 'Personal',
 };
 
-// ─── Data helpers ─────────────────────────────
+function _uid() {
+  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+}
+
+
 
 function loadData() {
   return load(K.okrs, { quarters: {}, activeQuarter: null });
@@ -210,7 +214,6 @@ function _renderKR(objId, kr) {
     <span class="okr-kr-text${doneClass}">${esc(kr.text)}</span>
     <div class="okr-kr-progress">
       <input type="number" class="okr-kr-input" value="${esc(String(kr.current))}"
-        onchange="updateKRProgress(${objId}, ${kr.id}, this.value)"
         onblur="updateKRProgress(${objId}, ${kr.id}, this.value)"
         title="Progreso actual" ${kr.done ? 'disabled' : ''}>
       <span class="okr-kr-target">/ ${esc(String(kr.target))} ${esc(kr.unit || '')}</span>
@@ -255,7 +258,7 @@ window._saveNewObjective = function() {
   const quarter = getActiveQuarter(data);
   ensureQuarter(data, quarter);
   data.quarters[quarter].objectives.push({
-    id: Date.now(),
+    id: _uid(),
     title,
     category: catEl?.value || 'negocio',
     keyResults: [],
@@ -372,7 +375,7 @@ window._saveNewKR = function(objId) {
   const obj = objectives.find(o => o.id === objId);
   if (!obj) return;
   obj.keyResults.push({
-    id: Date.now(),
+    id: _uid(),
     text,
     target,
     current: 0,
