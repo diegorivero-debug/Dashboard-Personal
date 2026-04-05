@@ -265,6 +265,21 @@
 
   </section>
 
+  <!-- ─── WEEKLY REPORT ─── -->
+  <section class="section" id="tab-weekly-report">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <div class="page-title">📋 Weekly Report</div>
+        <div class="page-subtitle">Informe semanal auto-generado con datos en tiempo real</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" style="font-size:13px" onclick="copyReportToClipboard()">📋 Copiar al clipboard</button>
+        <button class="btn btn-ghost" style="font-size:13px" onclick="printReport()">🖨️ Imprimir / PDF</button>
+      </div>
+    </div>
+    <div id="weekly-report-content"></div>
+  </section>
+
   <!-- ─── ROUTINE ─── -->
   <section class="section" id="tab-routine">
     <div id="routine-content"></div>
@@ -2708,6 +2723,10 @@
 <script type="module">
   import { initPersonTimeline } from './js/modules/person-timeline.js';
   initPersonTimeline();
+</script>
+<script type="module">
+  import { initWeeklyReport } from './js/modules/weekly-report.js';
+  initWeeklyReport();
 </script>
 </body>
 </html>
