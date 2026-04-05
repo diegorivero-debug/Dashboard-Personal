@@ -4034,3 +4034,54 @@
 [data-theme="dark"] .hw-notif-panel {
   box-shadow: 0 8px 32px rgba(0,0,0,0.45);
 }
+
+
+/* ═══ KPI TREND CHARTS ═══ */
+
+/* Selector de métricas para trend charts */
+.kpi-trend-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+.kpi-trend-metric-pill {
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.kpi-trend-metric-pill.active {
+  background: var(--metric-color, var(--accent));
+  color: #fff;
+  border-color: var(--metric-color, var(--accent));
+}
+.kpi-trend-metric-pill:hover:not(.active) {
+  border-color: var(--metric-color, var(--accent));
+  color: var(--text-primary);
+}
+
+/* View pills (4w / quarter / all) */
+.kpi-trend-view-pills {
+  display: flex;
+  gap: 4px;
+}
+.kpi-trend-pill {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.kpi-trend-pill.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
