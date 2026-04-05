@@ -1,11 +1,12 @@
 import { K } from '../core/constants.js';
 import { load } from '../core/utils.js';
 
-export const TABS = ['resumen','routine','kpis','equipo','tareas','agenda','reuniones','actas','notas','feedback','vozcli','convs','person-timeline'];
+export const TABS = ['resumen','weekly-report','routine','kpis','equipo','tareas','agenda','reuniones','actas','notas','feedback','vozcli','convs','person-timeline'];
 
 export const TAB_GROUPS = {
   negocio:   [
     { id:'resumen',              label:'📊 Resumen' },
+    { id:'weekly-report',        label:'📋 Weekly Report' },
     { id:'kpis',                 label:'📈 KPIs de Tienda' },
     { id:'routine',              label:'📅 Semana' },
     { id:'okrs',                 label:'🎯 OKR & Goals' },
@@ -92,6 +93,7 @@ export function switchTab(name) {
   if(name==='commitments')   { window.loadCommitmentsQuarter?.(window.getCurrentCommitmentsQuarter?.()); }
   if(name==='qbr')           { window.renderQBR?.(); }
   if(name==='commitments-timeline') window.renderCommitmentsTimeline?.();
+  if(name==='weekly-report')  window.renderWeeklyReport?.();
   if(name==='okrs')           window.renderOKRs?.();
   if(name==='ls-vacaciones')  window.renderLSVacaciones?.();
   if(name==='ls-festivos')    window.renderLSFestivos?.();
