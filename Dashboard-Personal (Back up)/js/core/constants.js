@@ -36,6 +36,7 @@ export const K = {
   meetingNotes:         'apg_meeting_notes',
   recurringMeetings:    'apg_recurring_meetings',
   managerConnections:   'apg_manager_connections',
+  okrs:                 'apg_okrs',
 };
 
 // % of AC+ goal below which an alert is shown
