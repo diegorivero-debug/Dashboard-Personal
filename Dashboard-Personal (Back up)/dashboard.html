@@ -692,21 +692,21 @@
         </div>
       </div>
       <div id="kpi-trend-metrics-selector" class="kpi-trend-metrics"></div>
-      <div id="kpi-trend-chart-container" style="position:relative;height:300px;margin:12px 0">
+      <div id="kpi-trend-chart-container" class="chart-container" style="height:300px">
         <canvas id="kpi-trend-canvas"></canvas>
       </div>
     </div>
 
     <div class="card section-gap" id="kpi-comparison-card">
       <h3>📊 Comparativa semanal (Chart.js)</h3>
-      <div id="kpi-comparison-chart-container" style="position:relative;height:250px;margin:12px 0">
+      <div id="kpi-comparison-chart-container" class="chart-container" style="height:250px">
         <canvas id="kpi-comparison-canvas"></canvas>
       </div>
     </div>
 
     <div class="card section-gap" id="kpi-quarter-progress-card">
       <h3>🎯 Progreso del Quarter</h3>
-      <div id="kpi-quarter-progress-container" style="position:relative;height:200px;margin:12px 0">
+      <div id="kpi-quarter-progress-container" class="chart-container" style="height:200px">
         <canvas id="kpi-quarter-canvas"></canvas>
       </div>
     </div>
@@ -1280,7 +1280,7 @@
 
   <!-- ─── PERSON TIMELINE ─── -->
   <section class="section" id="tab-person-timeline">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+    <div class="section-header-row">
       <div>
         <div class="page-title">📅 Timeline por Persona</div>
         <div class="page-subtitle">Historial unificado: 1:1s, feedback, reconocimientos y desarrollo</div>
@@ -1290,7 +1290,7 @@
       </select>
     </div>
     <div id="tl-person-header" style="display:none"></div>
-    <div id="tl-filters" style="display:none;margin-bottom:16px">
+    <div id="tl-filters" style="display:none">
       <button class="filter-pill active" onclick="filterTimelineByType('all', this)">Todos</button>
       <button class="filter-pill" onclick="filterTimelineByType('tb', this)">🤝 TB / 1:1</button>
       <button class="filter-pill" onclick="filterTimelineByType('feedback', this)">💬 Feedback</button>
@@ -1298,11 +1298,11 @@
       <button class="filter-pill" onclick="filterTimelineByType('pdi', this)">📈 PDI</button>
     </div>
     <div id="tl-timeline-list"></div>
-    <div id="tl-empty-select" class="empty-state" style="padding:60px 0">
+    <div id="tl-empty-select" class="empty-state">
       <div class="empty-state-icon">👤</div>
       <p>Selecciona una persona para ver su timeline completo</p>
     </div>
-    <div id="tl-empty-events" class="empty-state" style="display:none;padding:40px 0">
+    <div id="tl-empty-events" class="empty-state" style="display:none">
       <div class="empty-state-icon">📅</div>
       <p>No hay eventos registrados para esta persona</p>
     </div>
@@ -2055,28 +2055,28 @@
 
   <!-- ─── OKR & GOALS ─── -->
   <section class="section" id="tab-okrs">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+    <div class="section-header-row">
       <div>
         <div class="page-title">🎯 OKR &amp; Goals</div>
         <div class="page-subtitle">Objetivos personales del quarter con Key Results medibles</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="section-header-actions">
         <select class="task-select" id="okr-quarter-select" onchange="setOKRQuarter(this.value)" style="min-width:140px"></select>
         <button class="btn btn-primary" style="font-size:13px" onclick="addObjective()">➕ Nuevo Objetivo</button>
       </div>
     </div>
 
     <!-- Score global del quarter -->
-    <div class="card" id="okr-global-score" style="margin-bottom:20px"></div>
+    <div class="card" id="okr-global-score"></div>
 
     <!-- Formulario nuevo objetivo (oculto por defecto) -->
-    <div id="okr-new-form" style="display:none;margin-bottom:16px"></div>
+    <div id="okr-new-form" style="display:none"></div>
 
     <!-- Lista de objetivos -->
     <div id="okr-objectives-list"></div>
 
     <!-- Empty state -->
-    <div id="okr-empty" class="empty-state" style="display:none;padding:60px 0">
+    <div id="okr-empty" class="empty-state" style="display:none">
       <div class="empty-state-icon">🎯</div>
       <p>No hay objetivos definidos para este quarter</p>
       <p style="font-size:13px;color:var(--text-secondary)">Crea tu primer objetivo y define Key Results medibles</p>
