@@ -8,6 +8,7 @@ export const TAB_GROUPS = {
     { id:'resumen',              label:'📊 Resumen' },
     { id:'kpis',                 label:'📈 KPIs de Tienda' },
     { id:'routine',              label:'📅 Semana' },
+    { id:'okrs',                 label:'🎯 OKR & Goals' },
     { id:'qbr',                  label:'📊 QBR' },
     { id:'commitments',          label:'🎯 Commitments Q' },
     { id:'commitments-timeline', label:'🗓️ Timeline' }
@@ -90,6 +91,7 @@ export function switchTab(name) {
   if(name==='commitments')   { window.loadCommitmentsQuarter?.(window.getCurrentCommitmentsQuarter?.()); }
   if(name==='qbr')           { window.renderQBR?.(); }
   if(name==='commitments-timeline') window.renderCommitmentsTimeline?.();
+  if(name==='okrs')           window.renderOKRs?.();
   if(name==='ls-vacaciones')  window.renderLSVacaciones?.();
   if(name==='ls-festivos')    window.renderLSFestivos?.();
   if(name==='ls-peticiones')  window.renderLSPeticiones?.();

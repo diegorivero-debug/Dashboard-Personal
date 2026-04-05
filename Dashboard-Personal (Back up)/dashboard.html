@@ -2008,6 +2008,36 @@
     <div id="commitments-timeline-content"></div>
   </section>
 
+  <!-- ─── OKR & GOALS ─── -->
+  <section class="section" id="tab-okrs">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <div class="page-title">🎯 OKR &amp; Goals</div>
+        <div class="page-subtitle">Objetivos personales del quarter con Key Results medibles</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select class="task-select" id="okr-quarter-select" onchange="setOKRQuarter(this.value)" style="min-width:140px"></select>
+        <button class="btn btn-primary" style="font-size:13px" onclick="addObjective()">➕ Nuevo Objetivo</button>
+      </div>
+    </div>
+
+    <!-- Score global del quarter -->
+    <div class="card" id="okr-global-score" style="margin-bottom:20px"></div>
+
+    <!-- Formulario nuevo objetivo (oculto por defecto) -->
+    <div id="okr-new-form" style="display:none;margin-bottom:16px"></div>
+
+    <!-- Lista de objetivos -->
+    <div id="okr-objectives-list"></div>
+
+    <!-- Empty state -->
+    <div id="okr-empty" class="empty-state" style="display:none;padding:60px 0">
+      <div class="empty-state-icon">🎯</div>
+      <p>No hay objetivos definidos para este quarter</p>
+      <p style="font-size:13px;color:var(--text-secondary)">Crea tu primer objetivo y define Key Results medibles</p>
+    </div>
+  </section>
+
   <!-- ─── LEADERSHIP: VACACIONES ─── -->
   <section class="section" id="tab-ls-vacaciones">
     <!-- Header -->
@@ -2640,6 +2670,10 @@
   } else {
     window.addEventListener('load', () => initKPICharts());
   }
+</script>
+<script type="module">
+  import { initOKRs } from './js/modules/okrs.js';
+  initOKRs();
 </script>
 </body>
 </html>
