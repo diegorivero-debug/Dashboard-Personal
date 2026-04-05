@@ -35,6 +35,9 @@
     </div>
   </div>
 
+  <!-- ══════════════ HOME WIDGETS ══════════════ -->
+  <section class="hw-grid" id="hw-grid" aria-label="Resumen en vivo"></section>
+
   <div class="index-grid">
     <a class="index-card" href="dashboard.html?seccion=negocio">
       <div class="index-card-icon">💰</div>
@@ -462,6 +465,213 @@
     });
 
   })();
+</script>
+<script type="module">
+  import { K } from './js/core/constants.js';
+  import { load, esc } from './js/core/utils.js';
+
+  function renderHomeWidgets() {
+    const grid = document.getElementById('hw-grid');
+    if (!grid) return;
+
+    const today = new Date();
+    const todayStr = (() => {
+      const y  = today.getFullYear();
+      const mo = String(today.getMonth() + 1).padStart(2, '0');
+      const d  = String(today.getDate()).padStart(2, '0');
+      return `${y}-${mo}-${d}`;
+    })();
+
+    function daysDiff(dateStr) {
+      if (!dateStr) return Infinity;
+      return Math.floor((today - new Date(dateStr + 'T12:00:00')) / 86400000);
+    }
+
+    function parseNum(v) {
+      return parseFloat(String(v || '').replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+    }
+
+    function pct(val, obj) {
+      // Cap at 150% to handle overperformance without distorting the bar
+      return obj > 0 ? Math.min(Math.round((val / obj) * 100), 150) : 0;
+    }
+
+    function progressBar(p, color) {
+      const w = Math.min(p, 100);
+      const c = p >= 100 ? 'var(--success,#34c759)' : p >= 75 ? 'var(--accent,#0071e3)' : p >= 50 ? '#ff9f0a' : '#ff3b30';
+      return `<div class="hw-bar-track"><div class="hw-bar-fill" style="width:${w}%;background:${color||c}"></div></div>`;
+    }
+
+    function widget(id, icon, title, content, href) {
+      return `<a class="hw-card" href="${href}" id="hw-${id}">
+        <div class="hw-card-header">
+          <span class="hw-icon">${icon}</span>
+          <span class="hw-title">${title}</span>
+        </div>
+        <div class="hw-card-body">${content}</div>
+      </a>`;
+    }
+
+    const widgets = [];
+
+    /* ── 1. Tareas vencidas ─────────────────────── */
+    try {
+      const tasks = load(K.tasks, []);
+      const overdue = tasks.filter(t => !t.done && t.date && t.date < todayStr);
+      if (overdue.length === 0) {
+        widgets.push(widget('tasks', '✅', 'Tareas vencidas',
+          '<span class="hw-ok">Sin tareas vencidas</span>',
+          'dashboard.html?seccion=operativa'));
+      } else {
+        widgets.push(widget('tasks', '⚠️', 'Tareas vencidas',
+          `<span class="hw-alert">${overdue.length} tarea${overdue.length > 1 ? 's' : ''} vencida${overdue.length > 1 ? 's' : ''}</span>`,
+          'dashboard.html?seccion=operativa'));
+      }
+    } catch(e) {
+      widgets.push(widget('tasks', '⚠️', 'Tareas vencidas', '<span class="hw-muted">Sin datos</span>', 'dashboard.html?seccion=operativa'));
+    }
+
+    /* ── 2. KPIs — último snapshot ──────────────── */
+    try {
+      const kpis = load(K.kpis, null);
+      if (!kpis || (!kpis.ventas && !kpis.nps && !kpis.conv)) {
+        widgets.push(widget('kpis', '📊', 'KPIs — resumen',
+          '<span class="hw-muted">Sin datos de KPIs</span>',
+          'dashboard.html?seccion=negocio'));
+      } else {
+        const ventasPct = pct(parseNum(kpis.ventas), parseNum(kpis.objVentas));
+        // NPS is a 0-100 score, not a % of objective — show it as-is on the bar
+        const npsScore  = Math.min(Math.round(parseNum(kpis.nps)), 100);
+        const convPct   = pct(parseNum(kpis.conv),   parseNum(kpis.objConv));
+        const rows = [
+          { label: '💰 Ventas',     p: ventasPct, suffix: '%' },
+          { label: '⭐ NPS',        p: npsScore,  suffix: '' },
+          { label: '🔄 Conversión', p: convPct,   suffix: '%' },
+        ].map(r => `<div class="hw-kpi-row">
+          <span class="hw-kpi-label">${r.label}</span>
+          ${progressBar(r.p)}
+          <span class="hw-kpi-val">${r.p}${r.suffix}</span>
+        </div>`).join('');
+        widgets.push(widget('kpis', '📊', 'KPIs — resumen', rows, 'dashboard.html?seccion=negocio'));
+      }
+    } catch(e) {
+      widgets.push(widget('kpis', '📊', 'KPIs — resumen', '<span class="hw-muted">Sin datos</span>', 'dashboard.html?seccion=negocio'));
+    }
+
+    /* ── 3. Próximas reuniones de hoy ───────────── */
+    try {
+      const events = load(K.events, []);
+      const todayEvents = events
+        .filter(ev => ev.date === todayStr)
+        .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+        .slice(0, 3);
+      if (todayEvents.length === 0) {
+        widgets.push(widget('events', '📅', 'Reuniones de hoy',
+          '<span class="hw-muted">Sin reuniones hoy</span>',
+          'dashboard.html?seccion=operativa'));
+      } else {
+        const rows = todayEvents.map(ev =>
+          `<div class="hw-event-row"><span class="hw-event-time">${esc(ev.time || '—')}</span><span class="hw-event-title">${esc(ev.title || ev.name || '—')}</span></div>`
+        ).join('');
+        widgets.push(widget('events', '📅', 'Reuniones de hoy', rows, 'dashboard.html?seccion=operativa'));
+      }
+    } catch(e) {
+      widgets.push(widget('events', '📅', 'Reuniones de hoy', '<span class="hw-muted">Sin datos</span>', 'dashboard.html?seccion=operativa'));
+    }
+
+    /* ── 4. 1:1 pendientes ──────────────────────── */
+    try {
+      const team = load(K.team, []);
+      const tbs  = load(K.tbs, {});
+      const pending = team.filter(m => {
+        if (m.hidden) return false;
+        const sessions = tbs[m.id] || [];
+        if (sessions.length === 0) return true;
+        const lastDate = sessions.map(s => s.date).sort().pop();
+        return daysDiff(lastDate) > 14;
+      });
+      const semaphore = pending.length === 0 ? 'green' : pending.length <= 2 ? 'yellow' : 'red';
+      const semColors = { green: 'var(--success,#34c759)', yellow: '#ff9f0a', red: '#ff3b30' };
+      const body = pending.length === 0
+        ? '<span class="hw-ok">Todos con 1:1 recientes ✓</span>'
+        : `<span class="hw-count" style="color:${semColors[semaphore]}">${pending.length} persona${pending.length > 1 ? 's' : ''} sin 1:1 en +14 días</span>`;
+      widgets.push(widget('tbs', '👥', '1:1 pendientes', body, 'dashboard.html?seccion=equipo'));
+    } catch(e) {
+      widgets.push(widget('tbs', '👥', '1:1 pendientes', '<span class="hw-muted">Sin datos</span>', 'dashboard.html?seccion=equipo'));
+    }
+
+    /* ── 5. Último feedback SBI ─────────────────── */
+    try {
+      const sbi = load('apg_sbi_history', []);
+      if (!sbi.length) {
+        widgets.push(widget('sbi', '💬', 'Último feedback SBI',
+          '<span class="hw-muted">Sin feedback reciente</span>',
+          'dashboard.html?seccion=equipo'));
+      } else {
+        const last  = sbi[0];
+        const dAgo  = daysDiff(last.date);
+        const badge = last.type === 'positivo' ? '🌟 Positivo' : '🌱 Desarrollo';
+        const rel   = dAgo === 0 ? 'hoy' : dAgo === 1 ? 'hace 1 día' : `hace ${dAgo} días`;
+        widgets.push(widget('sbi', '💬', 'Último feedback SBI',
+          `<div class="hw-sbi-row"><span class="hw-sbi-person">${esc(last.personName || '—')}</span><span class="hw-sbi-meta">${esc(badge)} · ${esc(rel)}</span></div>`,
+          'dashboard.html?seccion=equipo'));
+      }
+    } catch(e) {
+      widgets.push(widget('sbi', '💬', 'Último feedback SBI', '<span class="hw-muted">Sin datos</span>', 'dashboard.html?seccion=equipo'));
+    }
+
+    /* ── 6. Racha de briefings ──────────────────── */
+    try {
+      const briefingDateRaw = load(K.briefingDate, null);
+      if (!briefingDateRaw) {
+        widgets.push(widget('briefing', '⏱️', 'Racha de briefings',
+          '<span class="hw-muted">Sin briefing registrado</span>',
+          'dashboard.html?seccion=negocio'));
+      } else {
+        // briefingDate stores the last completed date; show at least 1 day if done today/yesterday
+        const lastDate = new Date(briefingDateRaw + 'T12:00:00');
+        const diffDays = Math.floor((today - lastDate) / 86400000);
+        const streak   = diffDays <= 1 ? 1 : 0;
+        const doneToday = briefingDateRaw === todayStr;
+        if (streak > 0) {
+          const fire = doneToday ? '🔥' : '⏳';
+          widgets.push(widget('briefing', fire, 'Racha de briefings',
+            `<span class="hw-streak">${fire} ${streak} día${streak > 1 ? 's' : ''} de racha${doneToday ? '' : ' · sin briefing hoy'}</span>`,
+            'dashboard.html?seccion=negocio'));
+        } else {
+          widgets.push(widget('briefing', '⏱️', 'Racha de briefings',
+            '<span class="hw-alert">Sin briefing hoy</span>',
+            'dashboard.html?seccion=negocio'));
+        }
+      }
+    } catch(e) {
+      widgets.push(widget('briefing', '⏱️', 'Racha de briefings', '<span class="hw-muted">Sin datos</span>', 'dashboard.html?seccion=negocio'));
+    }
+
+    /* ── 7. Último reconocimiento ───────────────── */
+    try {
+      const recogs = load(K.reconocimientos, []);
+      if (!recogs.length) {
+        widgets.push(widget('recog', '🏆', 'Último reconocimiento',
+          '<span class="hw-muted">Sin reconocimientos aún</span>',
+          'dashboard.html?seccion=equipo'));
+      } else {
+        const sorted = recogs.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        const last   = sorted[0];
+        const dAgo   = daysDiff(last.date);
+        const rel    = dAgo === 0 ? 'hoy' : dAgo === 1 ? 'hace 1 día' : `hace ${dAgo} días`;
+        widgets.push(widget('recog', '🏆', 'Último reconocimiento',
+          `<div class="hw-sbi-row"><span class="hw-sbi-person">${esc(last.personName || String(last.personId || '—'))}</span><span class="hw-sbi-meta">${esc(rel)}</span></div>`,
+          'dashboard.html?seccion=equipo'));
+      }
+    } catch(e) {
+      widgets.push(widget('recog', '🏆', 'Último reconocimiento', '<span class="hw-muted">Sin datos</span>', 'dashboard.html?seccion=equipo'));
+    }
+
+    grid.innerHTML = widgets.join('');
+  }
+
+  renderHomeWidgets();
 </script>
 <script type="module">
   import { DEFAULT_QUOTES } from './js/core/constants.js';
