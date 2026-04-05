@@ -7,6 +7,15 @@
 import { K, FISCAL_QUARTERS, MESES, DIAS } from '../core/constants.js';
 import { load, esc, showToast, num } from '../core/utils.js';
 
+// ─── Thresholds ───────────────────────────────
+const WOW_POSITIVE_THRESHOLD  = 0;
+const WOW_WARNING_THRESHOLD   = -5;
+const OKR_GOOD_THRESHOLD      = 0.7;
+const OKR_MINIMUM_THRESHOLD   = 0.3;
+const KPI_GREEN_THRESHOLD     = 90;
+const KPI_YELLOW_THRESHOLD    = 70;
+const BRIEFING_STREAK_MIN     = 5;
+
 // ─── Date helpers ─────────────────────────────
 
 function getMondayOfWeek(date) {
@@ -90,6 +99,19 @@ const KPI_FIELD_MAP = [
   { key: 'cpUsage',         label: 'C&P Usage',       valField: 'cpUsage',         objField: 'objCpUsage' },
   { key: 'gbConv',          label: 'GB Conv.',         valField: 'gbConv',          objField: 'objGbConv' },
 ];
+
+// ─── Shared helpers ───────────────────────────
+
+function okrScoreColor(score) {
+  return score >= OKR_GOOD_THRESHOLD ? 'var(--success,#34c759)' :
+         score >= OKR_MINIMUM_THRESHOLD ? 'var(--warning,#ff9f0a)' : 'var(--danger,#ff3b30)';
+}
+
+function kpiPctClass(pct) {
+  if (pct === null) return '';
+  return pct >= KPI_GREEN_THRESHOLD ? 'wr-kpi-green' :
+         pct >= KPI_YELLOW_THRESHOLD ? 'wr-kpi-yellow' : 'wr-kpi-red';
+}
 
 // ─── generateReportData ───────────────────────
 
@@ -276,9 +298,9 @@ export function generateHighlights(data) {
   // 1–3: KPI trends
   for (const kpi of (data.kpis || [])) {
     if (kpi.wow !== null) {
-      if (kpi.wow > 0) {
+      if (kpi.wow > WOW_POSITIVE_THRESHOLD) {
         insights.push({ type: 'positive', text: `✅ ${kpi.label} mejoró +${kpi.wow.toFixed(1)}% esta semana` });
-      } else if (kpi.wow < -5) {
+      } else if (kpi.wow < WOW_WARNING_THRESHOLD) {
         insights.push({ type: 'warning', text: `📉 ${kpi.label} cayó ${kpi.wow.toFixed(1)}% esta semana` });
       }
     }
@@ -310,9 +332,9 @@ export function generateHighlights(data) {
 
   // 8: OKR score health
   if (data.okrs && data.okrs.globalScore !== null) {
-    if (data.okrs.globalScore >= 0.7) {
+    if (data.okrs.globalScore >= OKR_GOOD_THRESHOLD) {
       insights.push({ type: 'positive', text: `🎯 OKRs en buen estado: score global ${data.okrs.globalScore.toFixed(2)}` });
-    } else if (data.okrs.globalScore < 0.3) {
+    } else if (data.okrs.globalScore < OKR_MINIMUM_THRESHOLD) {
       insights.push({ type: 'warning', text: `⚠️ OKRs por debajo del mínimo: score ${data.okrs.globalScore.toFixed(2)} — revisar prioridades` });
     } else {
       insights.push({ type: 'info', text: `📊 OKRs en progreso: score global ${data.okrs.globalScore.toFixed(2)}` });
@@ -320,7 +342,7 @@ export function generateHighlights(data) {
   }
 
   // 9: Briefing streak
-  if (data.briefingStreak >= 5) {
+  if (data.briefingStreak >= BRIEFING_STREAK_MIN) {
     insights.push({ type: 'positive', text: `🔥 ${data.briefingStreak} días de racha con briefing diario` });
   }
 
@@ -353,9 +375,7 @@ export function renderWeeklyReport() {
   if (data.kpis.length) {
     for (const kpi of data.kpis) {
       const pctStr = kpi.pct !== null ? `${kpi.pct}%` : '—';
-      const pctClass = kpi.pct === null ? '' :
-        kpi.pct >= 90 ? 'wr-kpi-green' :
-        kpi.pct >= 70 ? 'wr-kpi-yellow' : 'wr-kpi-red';
+      const pctClass = kpiPctClass(kpi.pct);
       const wowStr = kpi.wow !== null ? (kpi.wow >= 0 ? `+${kpi.wow.toFixed(1)}%` : `${kpi.wow.toFixed(1)}%`) : '—';
       const trendClass = kpi.trendArrow === '↑' ? 'wr-trend-up' : kpi.trendArrow === '↓' ? 'wr-trend-down' : 'wr-trend-flat';
       const objStr = kpi.objetivo !== null ? num(kpi.objetivo) : '—';
@@ -375,7 +395,7 @@ export function renderWeeklyReport() {
       <div class="wr-section-title">📊 KPIs de la semana</div>
       <table class="wr-kpi-table">
         <thead><tr>
-          <th>Métrica</th><th>Actual</th><th>Objetivo</th><th>%</th><th>WoW</th>
+          <th scope="col">Métrica</th><th scope="col">Actual</th><th scope="col">Objetivo</th><th scope="col">%</th><th scope="col">WoW</th>
         </tr></thead>
         <tbody>${kpiRows}</tbody>
       </table>
@@ -439,12 +459,10 @@ export function renderWeeklyReport() {
   // ── OKRs ─────────────────────────────────
   let okrHtml = '';
   if (data.okrs.objectives.length) {
-    const scoreColor = data.okrs.globalScore >= 0.7 ? 'var(--success,#34c759)' :
-                       data.okrs.globalScore >= 0.3 ? 'var(--warning,#ff9f0a)' : 'var(--danger,#ff3b30)';
+    const scoreColor = okrScoreColor(data.okrs.globalScore);
     const objRows = data.okrs.objectives.map(obj => {
       const pct = Math.round(obj.score * 100);
-      const barColor = obj.score >= 0.7 ? 'var(--success,#34c759)' :
-                       obj.score >= 0.3 ? 'var(--warning,#ff9f0a)' : 'var(--danger,#ff3b30)';
+      const barColor = okrScoreColor(obj.score);
       return `<div class="wr-okr-row">
         <div style="flex:1;min-width:0;font-size:13px">${esc(obj.title)}</div>
         <div class="wr-okr-bar"><div class="wr-okr-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
@@ -493,7 +511,7 @@ export function renderWeeklyReport() {
   const notesHtml = `
     <div class="wr-section">
       <div class="wr-section-title">📝 Notas personales</div>
-      <textarea class="wr-notes-area" placeholder="Añade notas para esta semana (solo esta sesión)…"></textarea>
+      <textarea class="wr-notes-area" aria-label="Notas personales de la semana" placeholder="Añade notas para esta semana (solo esta sesión)…"></textarea>
     </div>`;
 
   container.innerHTML = `<div class="wr-report">
