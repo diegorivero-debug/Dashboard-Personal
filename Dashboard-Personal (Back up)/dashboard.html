@@ -1263,6 +1263,36 @@
     </div>
   </section>
 
+  <!-- ─── PERSON TIMELINE ─── -->
+  <section class="section" id="tab-person-timeline">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <div class="page-title">📅 Timeline por Persona</div>
+        <div class="page-subtitle">Historial unificado: 1:1s, feedback, reconocimientos y desarrollo</div>
+      </div>
+      <select class="task-select" id="tl-person-select" onchange="setTimelinePerson(this.value)" style="min-width:200px">
+        <option value="">— Selecciona persona —</option>
+      </select>
+    </div>
+    <div id="tl-person-header" style="display:none"></div>
+    <div id="tl-filters" style="display:none;margin-bottom:16px">
+      <button class="filter-pill active" onclick="filterTimelineByType('all', this)">Todos</button>
+      <button class="filter-pill" onclick="filterTimelineByType('tb', this)">🤝 TB / 1:1</button>
+      <button class="filter-pill" onclick="filterTimelineByType('feedback', this)">💬 Feedback</button>
+      <button class="filter-pill" onclick="filterTimelineByType('recog', this)">🏆 Reconocimientos</button>
+      <button class="filter-pill" onclick="filterTimelineByType('pdi', this)">📈 PDI</button>
+    </div>
+    <div id="tl-timeline-list"></div>
+    <div id="tl-empty-select" class="empty-state" style="padding:60px 0">
+      <div class="empty-state-icon">👤</div>
+      <p>Selecciona una persona para ver su timeline completo</p>
+    </div>
+    <div id="tl-empty-events" class="empty-state" style="display:none;padding:40px 0">
+      <div class="empty-state-icon">📅</div>
+      <p>No hay eventos registrados para esta persona</p>
+    </div>
+  </section>
+
   <!-- ─── FEEDBACK SBI ─── -->
   <section class="section" id="tab-feedback">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
@@ -2674,6 +2704,10 @@
 <script type="module">
   import { initOKRs } from './js/modules/okrs.js';
   initOKRs();
+</script>
+<script type="module">
+  import { initPersonTimeline } from './js/modules/person-timeline.js';
+  initPersonTimeline();
 </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 import { K } from '../core/constants.js';
 import { load } from '../core/utils.js';
 
-export const TABS = ['resumen','routine','kpis','equipo','tareas','agenda','reuniones','actas','notas','feedback','vozcli','convs'];
+export const TABS = ['resumen','routine','kpis','equipo','tareas','agenda','reuniones','actas','notas','feedback','vozcli','convs','person-timeline'];
 
 export const TAB_GROUPS = {
   negocio:   [
@@ -14,10 +14,11 @@ export const TAB_GROUPS = {
     { id:'commitments-timeline', label:'🗓️ Timeline' }
   ],
   equipo:    [
-    { id:'equipo',    label:'👥 Mi Equipo' },
-    { id:'feedback',  label:'💬 Feedback SBI' },
-    { id:'convs',     label:'📋 Conversaciones' },
-    { id:'ls-index',  label:'📊 Leadership Index' }
+    { id:'equipo',           label:'👥 Mi Equipo' },
+    { id:'person-timeline',  label:'📅 Timeline' },
+    { id:'feedback',         label:'💬 Feedback SBI' },
+    { id:'convs',            label:'📋 Conversaciones' },
+    { id:'ls-index',         label:'📊 Leadership Index' }
   ],
   cliente:   [
     { id:'vozcli',    label:'🗣️ Voz Cliente' }
@@ -96,6 +97,7 @@ export function switchTab(name) {
   if(name==='ls-festivos')    window.renderLSFestivos?.();
   if(name==='ls-peticiones')  window.renderLSPeticiones?.();
   if(name==='ls-index')       window.renderLeadershipIndex?.();
+  if(name==='person-timeline') window.renderPersonTimeline?.();
   if(name==='notas')          { window.renderMeetingNotes?.(); window.renderStorageIndicator?.(); }
 }
 
