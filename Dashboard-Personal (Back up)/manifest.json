@@ -1,0 +1,15 @@
+{
+  "name": "Panel Apple Passeig de Gràcia",
+  "short_name": "Panel APG",
+  "description": "Dashboard personal Store Leader",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f5f7",
+  "theme_color": "#0071e3",
+  "icons": [
+    { "src": "icon.svg",     "sizes": "any",     "type": "image/svg+xml" },
+    { "src": "icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

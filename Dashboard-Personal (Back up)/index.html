@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel — Apple Passeig de Gràcia</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Panel APG">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="index-body">
+
+<header class="index-header">
+  <span class="apple-logo">&#63743;</span>
+  <div>
+    <div class="store-name">Apple Passeig de Gràcia</div>
+    <div class="store-role">Store Leader · Diego Rivero</div>
+  </div>
+</header>
+
+<main class="index-main">
+  <div class="index-welcome">
+    <h1>Panel de Gestión</h1>
+    <p>Selecciona el área en la que quieres trabajar</p>
+    <div class="index-fiscal-info" id="index-fiscal-info">
+      <div class="index-date" id="index-date">—</div>
+      <div class="index-time" id="index-time">—</div>
+      <div class="index-quarter" id="index-quarter">—</div>
+      <div class="index-quote" id="index-quote" style="display:none">
+        <span class="index-quote-text" id="index-quote-text"></span>
+        <span class="index-quote-author" id="index-quote-author"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="index-grid">
+    <a class="index-card" href="dashboard.html?seccion=negocio">
+      <div class="index-card-icon">💰</div>
+      <div class="index-card-title">Negocio &amp; Resultados</div>
+      <div class="index-card-desc">Resumen general, KPIs de Tienda y revisión semanal (Routine)</div>
+    </a>
+
+    <a class="index-card" href="dashboard.html?seccion=equipo">
+      <div class="index-card-icon">👥</div>
+      <div class="index-card-title">Equipo &amp; Desarrollo</div>
+      <div class="index-card-desc">Gestión del equipo, Feedback SBI, Conversaciones TB/1:1 y Leadership Index</div>
+    </a>
+
+    <a class="index-card" href="dashboard.html?seccion=cliente">
+      <div class="index-card-icon">🌟</div>
+      <div class="index-card-title">Cliente &amp; Experiencia</div>
+      <div class="index-card-desc">Voz del Cliente, verbatims y métricas de experiencia</div>
+    </a>
+
+    <a class="index-card" href="dashboard.html?seccion=operativa">
+      <div class="index-card-icon">🗂️</div>
+      <div class="index-card-title">Operativa &amp; Gestión</div>
+      <div class="index-card-desc">Tareas, Agenda, Reuniones, Actas y Notas</div>
+    </a>
+    <a class="index-card" href="dashboard.html?seccion=leadership">
+      <div class="index-card-icon">📆</div>
+      <div class="index-card-title">Leadership Schedule</div>
+      <div class="index-card-desc">Vacaciones, devolución de festivos y peticiones del equipo de liderazgo</div>
+    </a>
+
+    <div class="index-card" onclick="openSettingsModal()" style="cursor:pointer">
+      <div class="index-card-icon">⚙️</div>
+      <div class="index-card-title">Ajustes</div>
+      <div class="index-card-desc">Apariencia, backup de datos y mantenimiento</div>
+    </div>
+  </div>
+</main>
+
+<!-- ══════════════ MODAL: AJUSTES ══════════════ -->
+<div id="settings-modal-overlay" onclick="if(event.target===this)closeSettingsModal()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;backdrop-filter:blur(4px)">
+  <div id="settings-modal" class="settings-modal">
+
+    <!-- Cabecera -->
+    <div class="settings-modal-header">
+      <div class="settings-modal-title">⚙️ Ajustes</div>
+      <button class="settings-modal-close" onclick="closeSettingsModal()" title="Cerrar">✕</button>
+    </div>
+
+    <!-- Contenido con scroll -->
+    <div class="settings-modal-body">
+
+      <!-- ── SECCIÓN 1: APARIENCIA ── -->
+      <div class="settings-section">
+        <div class="settings-section-title">🎨 Apariencia</div>
+
+        <!-- Tema claro/oscuro -->
+        <div class="settings-row">
+          <span id="settings-theme-label" class="settings-row-label">🌙 Modo oscuro</span>
+          <button id="settings-theme-btn" class="settings-btn" onclick="settingsToggleTheme()">Activar</button>
+        </div>
+
+        <!-- Colores de acento -->
+        <div class="settings-row" style="align-items:flex-start;flex-direction:column;gap:10px">
+          <span class="settings-row-label">🎨 Color de acento</span>
+          <div style="display:flex;gap:10px">
+            <button class="settings-accent-dot active" data-accent="blue"
+              style="background:#0071e3" title="Azul Apple"
+              onclick="settingsSetAccent('blue')"></button>
+            <button class="settings-accent-dot" data-accent="green"
+              style="background:#28a745" title="Verde"
+              onclick="settingsSetAccent('green')"></button>
+            <button class="settings-accent-dot" data-accent="purple"
+              style="background:#6f42c1" title="Morado"
+              onclick="settingsSetAccent('purple')"></button>
+            <button class="settings-accent-dot" data-accent="coral"
+              style="background:#e8533a" title="Coral"
+              onclick="settingsSetAccent('coral')"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECCIÓN 2: DATOS & BACKUP ── -->
+      <div class="settings-section">
+        <div class="settings-section-title">💾 Datos &amp; Backup</div>
+
+        <!-- Indicador de almacenamiento -->
+        <div style="margin-bottom:14px">
+          <div class="settings-row-label" style="margin-bottom:8px">📊 Uso de almacenamiento</div>
+          <div id="settings-storage-indicator">
+            <div style="font-size:13px;color:var(--text-secondary)">Calculando...</div>
+          </div>
+        </div>
+
+        <!-- Último backup -->
+        <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <span class="settings-row-label">🕐 Último backup</span>
+          <span id="settings-last-backup" style="font-size:12px;color:var(--text-secondary)">—</span>
+        </div>
+
+        <!-- Acciones de export / import -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+          <button class="settings-btn settings-btn-primary" onclick="settingsExportData()">
+            📤 Exportar backup
+          </button>
+          <label class="settings-btn" style="cursor:pointer">
+            📥 Importar backup
+            <input type="file" accept=".json" style="display:none"
+              onchange="settingsImportData(event)">
+          </label>
+        </div>
+        <div id="settings-import-status" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+      </div>
+
+      <!-- ── SECCIÓN 3: MANTENIMIENTO ── -->
+      <div class="settings-section" style="border-bottom:none">
+        <div class="settings-section-title">🗂️ Mantenimiento</div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Archivar mes anterior</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">
+              Libera espacio archivando los datos del mes pasado
+            </div>
+          </div>
+          <button class="settings-btn" onclick="settingsArchivePreviousMonth()">🗂️ Archivar</button>
+        </div>
+        <div id="settings-archive-result" style="font-size:12px;color:#34c759;margin-top:6px;min-height:16px"></div>
+      </div>
+
+    </div><!-- /settings-modal-body -->
+  </div><!-- /settings-modal -->
+</div><!-- /settings-modal-overlay -->
+
+<script>
+  /* Apply saved theme preference */
+  (function() {
+    try {
+      const isDarkTheme = JSON.parse(localStorage.getItem('apg_theme'));
+      if (isDarkTheme) document.documentElement.setAttribute('data-theme', 'dark');
+    } catch(e) {}
+  })();
+</script>
+
+<script type="module">
+  import { FISCAL_QUARTERS, DIAS, MESES } from './js/core/constants.js';
+
+  function getFiscalWeekInfo(date) {
+    let activeQ = null;
+    for (let i = FISCAL_QUARTERS.length - 1; i >= 0; i--) {
+      if (date >= FISCAL_QUARTERS[i].startDate) { activeQ = FISCAL_QUARTERS[i]; break; }
+    }
+    if (!activeQ) return null;
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weekNum = Math.floor((date - activeQ.startDate) / msPerWeek) + 1;
+    return { week: weekNum, quarter: activeQ.label };
+  }
+
+  // DIAS en constants.js usa minúsculas → capitalizar para display
+  const DIAS_CAP = DIAS.map(d => d.charAt(0).toUpperCase() + d.slice(1));
+
+  function updateFiscalInfo() {
+    const now = new Date();
+    const dateStr = `${DIAS_CAP[now.getDay()]}, ${now.getDate()} de ${MESES[now.getMonth()]} de ${now.getFullYear()}`;
+    const dateEl = document.getElementById('index-date');
+    if (dateEl) dateEl.textContent = dateStr;
+
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    const timeEl = document.getElementById('index-time');
+    if (timeEl) timeEl.textContent = `${h}:${m}:${s}`;
+
+    const fi = getFiscalWeekInfo(now);
+    const quarterEl = document.getElementById('index-quarter');
+    if (quarterEl && fi) quarterEl.textContent = `Week ${fi.week} · ${fi.quarter}`;
+    else if (quarterEl) quarterEl.textContent = '';
+  }
+
+  updateFiscalInfo();
+  setInterval(updateFiscalInfo, 1000);
+</script>
+
+<script>
+  /* ── SETTINGS MODAL ── */
+  (function() {
+
+    // ── Abrir / Cerrar ──────────────────────────────────────────
+    window.openSettingsModal = function() {
+      const overlay = document.getElementById('settings-modal-overlay');
+      const modal   = document.getElementById('settings-modal');
+      if (!overlay || !modal) return;
+      overlay.style.display = 'block';
+      // Forzar reflow para que la transición funcione
+      modal.getBoundingClientRect();
+      modal.classList.add('open');
+      settingsRenderStorage();
+      settingsRenderLastBackup();
+      settingsRenderAccent();
+      settingsRenderThemeBtn();
+    };
+
+    window.closeSettingsModal = function() {
+      const overlay = document.getElementById('settings-modal-overlay');
+      const modal   = document.getElementById('settings-modal');
+      if (!overlay || !modal) return;
+      modal.classList.remove('open');
+      setTimeout(() => { overlay.style.display = 'none'; }, 350);
+    };
+
+    // ── Apariencia: tema ────────────────────────────────────────
+    window.settingsToggleTheme = function() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      try { localStorage.setItem('apg_theme', JSON.stringify(newTheme === 'dark')); } catch(e) {}
+      settingsRenderThemeBtn();
+    };
+
+    function settingsRenderThemeBtn() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const label = document.getElementById('settings-theme-label');
+      const btn   = document.getElementById('settings-theme-btn');
+      if (label) label.textContent = isDark ? '☀️ Modo claro' : '🌙 Modo oscuro';
+      if (btn)   btn.textContent   = isDark ? 'Desactivar' : 'Activar';
+    }
+
+    // ── Apariencia: acento ──────────────────────────────────────
+    const ACCENT_COLORS = {
+      blue:   { css: '#0071e3', vars: { '--accent': '#0071e3', '--accent-hover': '#0077ed' } },
+      green:  { css: '#28a745', vars: { '--accent': '#28a745', '--accent-hover': '#22963d' } },
+      purple: { css: '#6f42c1', vars: { '--accent': '#6f42c1', '--accent-hover': '#6230b8' } },
+      coral:  { css: '#e8533a', vars: { '--accent': '#e8533a', '--accent-hover': '#d44530' } }
+    };
+
+    window.settingsSetAccent = function(name) {
+      const theme = ACCENT_COLORS[name];
+      if (!theme) return;
+      const root = document.documentElement;
+      Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+      try { localStorage.setItem('apg_accent', name); } catch(e) {}
+      settingsRenderAccent();
+    };
+
+    function settingsRenderAccent() {
+      const saved = localStorage.getItem('apg_accent') || 'blue';
+      document.querySelectorAll('.settings-accent-dot').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.accent === saved);
+      });
+    }
+
+    // Aplicar acento guardado al cargar
+    (function applyAccentOnLoad() {
+      const saved = localStorage.getItem('apg_accent');
+      if (saved && ACCENT_COLORS[saved]) {
+        const root = document.documentElement;
+        Object.entries(ACCENT_COLORS[saved].vars).forEach(([k, v]) => root.style.setProperty(k, v));
+      }
+    })();
+
+    // ── Datos: almacenamiento ───────────────────────────────────
+    function settingsRenderStorage() {
+      const el = document.getElementById('settings-storage-indicator');
+      if (!el) return;
+      let total = 0;
+      try {
+        for (let key in localStorage) {
+          if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
+            total += (localStorage[key].length + key.length) * 2;
+          }
+        }
+      } catch(e) {}
+      const usedKB  = Math.round(total / 1024);
+      const limitKB = 5120;
+      const pct     = Math.min(100, Math.round((usedKB / limitKB) * 100));
+      let color = '#34c759'; // success
+      let icon  = '🟢';
+      if (pct >= 80)      { color = '#ff3b30'; icon = '🔴'; }
+      else if (pct >= 60) { color = '#ff9f0a'; icon = '🟡'; }
+      el.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:13px;color:var(--text-secondary)">${icon} ${usedKB} KB de ~${limitKB} KB</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary)">${pct}%</span>
+        </div>
+        <div style="background:var(--border);border-radius:99px;height:6px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:99px;transition:width 0.4s"></div>
+        </div>
+      `;
+    }
+
+    // ── Datos: último backup ────────────────────────────────────
+    function settingsRenderLastBackup() {
+      const el = document.getElementById('settings-last-backup');
+      if (!el) return;
+      const ts = parseInt(localStorage.getItem('apg_last_backup') || '0', 10);
+      if (!ts) { el.textContent = 'Nunca — ¡exporta un backup pronto!'; return; }
+      const d    = new Date(ts);
+      const days = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
+      const fmt  = d.toLocaleDateString('es-ES', { day:'2-digit', month:'long', year:'numeric' });
+      const rel  = days === 0 ? 'hoy' : days === 1 ? 'hace 1 día' : `hace ${days} días`;
+      el.textContent = `${fmt} (${rel})`;
+      el.style.color = days > 7 ? '#ff9f0a' : 'var(--text-secondary)';
+    }
+
+    // ── Datos: export / import ──────────────────────────────────
+    window.settingsExportData = function() {
+      try {
+        const data = {};
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          data[k] = localStorage.getItem(k);
+        }
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        const date = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `apg-backup-${date}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        localStorage.setItem('apg_last_backup', Date.now());
+        settingsRenderLastBackup();
+        const status = document.getElementById('settings-import-status');
+        if (status) { status.textContent = '✓ Backup exportado correctamente'; status.style.color = '#34c759'; setTimeout(() => { status.textContent = ''; }, 3000); }
+      } catch(e) {
+        const status = document.getElementById('settings-import-status');
+        if (status) { status.textContent = '✗ Error al exportar'; status.style.color = '#ff3b30'; }
+      }
+    };
+
+    window.settingsImportData = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const status = document.getElementById('settings-import-status');
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          // Filtrar solo claves con prefijo apg_
+          const apgEntries = Object.entries(data).filter(([k]) => k.startsWith('apg_'));
+          if (apgEntries.length === 0) {
+            if (status) { status.textContent = '✗ Archivo inválido: no parece un backup de este dashboard'; status.style.color = '#ff3b30'; }
+            return;
+          }
+          // Fecha de último backup en el archivo (si existe)
+          const lastBackupRaw = data['apg_last_backup'];
+          let lastBackupStr = '';
+          if (lastBackupRaw) {
+            const ts = parseInt(lastBackupRaw, 10);
+            if (ts) lastBackupStr = new Date(ts).toLocaleDateString('es-ES', { day:'2-digit', month:'long', year:'numeric' });
+          }
+          // Modal de confirmación inline
+          const overlay = document.createElement('div');
+          overlay.id = 'apg-import-confirm';
+          overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999';
+          overlay.innerHTML = `
+            <div style="background:var(--surface);border-radius:16px;padding:28px 24px;max-width:380px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.25)">
+              <div style="font-size:17px;font-weight:600;color:var(--text-primary);margin-bottom:12px">📦 Confirmar importación</div>
+              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px">Se van a importar <strong style="color:var(--text-primary)">${apgEntries.length} claves</strong> con prefijo <code>apg_</code>.</div>
+              ${lastBackupStr ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">Fecha del backup: <strong style="color:var(--text-primary)">${lastBackupStr}</strong></div>` : ''}
+              <div style="font-size:12px;color:#ff9f0a;margin-bottom:18px">⚠️ Se sobrescribirán los datos actuales. Esta acción no se puede deshacer.</div>
+              <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button id="apg-import-cancel" style="padding:8px 18px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-primary);font-size:14px;cursor:pointer">Cancelar</button>
+                <button id="apg-import-confirm-btn" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer">✓ Importar ${apgEntries.length} claves</button>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(overlay);
+          document.getElementById('apg-import-cancel').onclick = function() {
+            overlay.remove();
+            if (status) { status.textContent = ''; }
+          };
+          document.getElementById('apg-import-confirm-btn').onclick = function() {
+            overlay.remove();
+            try {
+              apgEntries.forEach(([k, v]) => localStorage.setItem(k, v));
+              if (status) { status.textContent = '✓ Datos importados. Recarga la página para ver los cambios.'; status.style.color = '#34c759'; }
+              settingsRenderStorage();
+              settingsRenderLastBackup();
+            } catch(err) {
+              if (status) { status.textContent = '✗ Error al escribir en localStorage'; status.style.color = '#ff3b30'; }
+            }
+          };
+        } catch(err) {
+          if (status) { status.textContent = '✗ Archivo inválido'; status.style.color = '#ff3b30'; }
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    };
+
+    // ── Mantenimiento: archivar mes anterior ────────────────────
+    window.settingsArchivePreviousMonth = function() {
+      // Intentar llamar a la función nativa del dashboard si está disponible
+      // (cuando el usuario navega desde dashboard.html)
+      if (typeof window.archivePreviousMonth === 'function') {
+        window.archivePreviousMonth();
+        return;
+      }
+      // Desde index.html: archivar claves de tareas/notas del mes anterior
+      try {
+        const now   = new Date();
+        const prev  = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const label = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+        const archiveKey = `apg_archive_${label}`;
+        const keysToArchive = ['apg_tareas', 'apg_notas', 'apg_reuniones', 'apg_actas'];
+        const archived = {};
+        keysToArchive.forEach(k => {
+          const val = localStorage.getItem(k);
+          if (val) archived[k] = val;
+        });
+        localStorage.setItem(archiveKey, JSON.stringify(archived));
+        const result = document.getElementById('settings-archive-result');
+        if (result) { result.textContent = `✓ Mes ${label} archivado correctamente`; setTimeout(() => { result.textContent = ''; }, 4000); }
+        settingsRenderStorage();
+      } catch(e) {
+        const result = document.getElementById('settings-archive-result');
+        if (result) { result.textContent = '✗ Error al archivar'; }
+      }
+    };
+
+    // ── Cerrar con tecla Escape ─────────────────────────────────
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeSettingsModal();
+    });
+
+  })();
+</script>
+<script type="module">
+  import { DEFAULT_QUOTES } from './js/core/constants.js';
+  try {
+    const customQuotes = JSON.parse(localStorage.getItem('apg_custom_quotes') || '[]');
+    const allQuotes = [...DEFAULT_QUOTES, ...customQuotes];
+    const idx = Math.floor(new Date().getDate() % allQuotes.length);
+    const q = allQuotes[idx] || DEFAULT_QUOTES[0];
+    const quoteEl  = document.getElementById('index-quote');
+    const textEl   = document.getElementById('index-quote-text');
+    const authorEl = document.getElementById('index-quote-author');
+    if (quoteEl && textEl && authorEl) {
+      textEl.textContent  = '\u201C' + q.text + '\u201D';
+      authorEl.textContent = '\u2014 ' + q.author;
+      quoteEl.style.display = 'block';
+    }
+  } catch(e) { console.error('Error loading quote:', e); }
+</script>
+</body>
+</html>

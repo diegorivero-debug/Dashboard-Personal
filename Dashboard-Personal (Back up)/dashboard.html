@@ -1,0 +1,2606 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel — Apple Passeig de Gràcia</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Panel APG">
+  <link rel="stylesheet" href="dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" crossorigin="anonymous" onerror="console.warn('Tesseract.js no pudo cargarse. El OCR no estará disponible.')"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" onerror="console.warn('pdf.js no pudo cargarse. La importación de PDFs Medallia no estará disponible.')"></script>
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header class="header">
+  <div class="header-left">
+    <span class="apple-logo">&#63743;</span>
+    <div>
+      <div class="store-name">Apple Passeig de Gràcia</div>
+      <div class="store-role">Store Leader · Diego Rivero</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="notif-btn" id="notif-btn" onclick="toggleNotifications()" title="Notificaciones">🔔<span class="notif-badge" id="notif-badge" style="display:none">0</span></button>
+    <div class="header-secondary-btns">
+      <button class="header-icon-btn" onclick="exportData()" title="Exportar backup de datos">💾</button>
+      <button class="header-icon-btn" onclick="importData()" title="Restaurar backup de datos">📂</button>
+      <button class="header-icon-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+    </div>
+    <button class="theme-btn" onclick="showBriefing()" title="Smart Briefing">🌅 Briefing</button>
+    <button class="theme-btn" onclick="enterFocusMode()">🎯 Focus</button>
+    <button class="theme-btn" id="launch-btn" onclick="openLaunchModal()" title="Modo Lanzamiento">🚀 Launch<span id="launch-badge" class="launch-badge-dot" style="display:none">●</span></button>
+  </div>
+</header>
+
+<!-- ══════════════ SNAPSHOT BANNER ══════════════ -->
+<div id="snapshot-banner" style="display:none" class="snapshot-banner">
+  <span>👁️ Modo solo lectura — Snapshot de <strong id="snapshot-banner-date">—</strong></span>
+  <button class="snapshot-banner-close" onclick="closeSnapshotBanner()">×</button>
+</div>
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav class="nav-groups">
+  <a href="index.html" class="nav-home-btn" title="Volver al inicio">← Inicio</a>
+  <button class="nav-group-btn active" data-group="negocio"   onclick="switchGroup('negocio')">💰 Negocio &amp; Resultados</button>
+  <button class="nav-group-btn"        data-group="equipo"    onclick="switchGroup('equipo')">👥 Equipo &amp; Desarrollo</button>
+  <button class="nav-group-btn"        data-group="cliente"   onclick="switchGroup('cliente')">🌟 Cliente &amp; Experiencia</button>
+  <button class="nav-group-btn"        data-group="operativa" onclick="switchGroup('operativa')">🗂️ Operativa &amp; Gestión</button>
+  <button class="nav-group-btn" data-group="leadership" onclick="switchGroup('leadership')">📆 Leadership Schedule</button>
+</nav>
+<nav class="nav-tabs" id="nav-tabs-bar">
+  <!-- tabs rendered dynamically by switchGroup() -->
+</nav>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<main class="main">
+
+  <!-- ─── RESUMEN ─── -->
+  <section class="section active" id="tab-resumen">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:4px">
+      <div class="greeting" id="greeting">Buenas tardes, Diego 👋</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" style="font-size:13px" onclick="generateWeeklySummary()">📋 Generar Resumen Semanal</button>
+        <button class="btn btn-ghost" style="font-size:13px" onclick="generarInformeSemanal()">📤 Informe semanal</button>
+      </div>
+    </div>
+    <div class="greeting-sub">Hoy es <span id="today-date">—</span></div>
+
+    <!-- Quick Actions Bar — fast navigation to common tasks -->
+    <div class="quick-actions-bar" style="margin-top:10px;margin-bottom:12px">
+      <button class="quick-action-btn" onclick="switchTab('kpis')" title="Ir a KPIs">
+        <span class="quick-action-icon">📈</span><span class="quick-action-label">KPIs</span>
+      </button>
+      <button class="quick-action-btn" onclick="switchTab('routine')" title="Preparar semana">
+        <span class="quick-action-icon">📅</span><span class="quick-action-label">Semana</span>
+      </button>
+      <button class="quick-action-btn" onclick="switchTab('commitments')" title="Commitments Q">
+        <span class="quick-action-icon">🎯</span><span class="quick-action-label">Commitments</span>
+      </button>
+      <button class="quick-action-btn" onclick="switchGroup('equipo')" title="Mi equipo">
+        <span class="quick-action-icon">👥</span><span class="quick-action-label">Equipo</span>
+      </button>
+      <button class="quick-action-btn" onclick="switchGroup('agenda')" title="Agenda">
+        <span class="quick-action-icon">📋</span><span class="quick-action-label">Agenda</span>
+      </button>
+      <button class="quick-action-btn" onclick="switchGroup('cliente','vozcli')" title="Voz del Cliente">
+        <span class="quick-action-icon">🗣️</span><span class="quick-action-label">Clientes</span>
+      </button>
+    </div>
+
+    <!-- Weekly Health Score — business health at a glance -->
+    <div id="weekly-health-score" class="card health-score-card" style="margin-top:12px;margin-bottom:16px"></div>
+
+    <!-- Smart Insights — auto-generated business intelligence -->
+    <div id="smart-insights" style="margin-bottom:16px"></div>
+
+    <!-- K3 Streak Alerts in Resumen -->
+    <div id="res-streak-alerts" class="streak-alerts-wrap" style="display:none;margin-top:12px"></div>
+
+    <!-- 1. Suggestion Banner — PRIMERO -->
+    <div id="suggestion-banner" style="display:none"></div>
+
+    <!-- 2. F3 — Mission Control "Esta Semana" — SEGUNDO -->
+    <div class="card" id="mission-control-card" style="margin-bottom:20px;border:2px solid var(--accent)">
+      <div class="card-title">🎯 Esta Semana</div>
+      <div id="mission-control-wrap" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px"></div>
+    </div>
+
+    <!-- 3. K4 Focus Metric Widget — TERCERO (con botón de eliminar) -->
+    <div class="card" style="margin-bottom:20px;border:2px solid var(--accent);background:linear-gradient(135deg,var(--surface),var(--surface2))">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="card-title" style="margin-bottom:0">🎯 Focus Metric de la Semana</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="saved-flash" id="focus-metric-saved">✓ Guardado</span>
+          <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px;color:var(--danger,#e53e3e)" onclick="clearFocusMetric()" aria-label="Limpiar Focus Metric de la semana">🗑️ Limpiar</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+        <div style="min-width:180px">
+          <div class="field-label">Métrica de foco</div>
+          <select class="task-select" id="focus-metric-select" style="width:100%">
+            <option value="">— Selecciona una métrica —</option>
+            <optgroup label="── KPIs Tienda ──">
+              <option value="ventas">💰 Ventas Totales</option>
+              <option value="nps">⭐ NPS Tienda</option>
+              <option value="dta">⏰ DTA Horas</option>
+              <option value="conv">🔄 Conversión</option>
+              <option value="upt">🛍️ UPT</option>
+            </optgroup>
+            <optgroup label="── Commitments Q3 FY26 ──">
+              <option value="customer-impacting">📊 Customer-Impacting Actual % to Guidance</option>
+              <option value="timely-assistance">⏱️ Timely Assistance</option>
+              <option value="dropin-conversion">🔄 Drop-In Conversion YoY %</option>
+              <option value="geniusbar-conversion">🍎 Genius Bar: Conversion %</option>
+              <option value="first-account">💳 First Account Purchase / Day</option>
+              <option value="nps-shared-feature">⭐ NPS: Shared a Feature %</option>
+              <option value="mac-instore-repair">🔧 Mac: In-Store Repair %</option>
+              <option value="delivered-dropin">📦 Delivered % (Drop-In)</option>
+              <option value="training-completion">🎓 Training Completion %</option>
+              <option value="coach-connections">🤝 Coach Connections</option>
+              <option value="pulse-action-plan">📋 Pulse Action Plan Completion %</option>
+            </optgroup>
+          </select>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <div class="field-label">💡 Hipótesis — ¿qué va a mover esta métrica?</div>
+          <input class="task-input" id="focus-metric-hypothesis" placeholder="Ej: El lanzamiento del iPhone 16 impulsará las ventas..." style="width:100%;box-sizing:border-box">
+        </div>
+        <div style="flex:1;min-width:200px">
+          <div class="field-label">✅ Reflexión de resultado (fin de semana)</div>
+          <input class="task-input" id="focus-metric-reflection" placeholder="¿Ocurrió lo que esperabas?" style="width:100%;box-sizing:border-box">
+        </div>
+        <button class="btn btn-primary" style="font-size:13px;flex-shrink:0" onclick="saveFocusMetric()">Guardar</button>
+      </div>
+      <div id="focus-metric-display" style="padding:16px;background:var(--surface2);border-radius:var(--radius-sm);text-align:center"></div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="grid-4" style="margin-bottom:24px">
+      <div class="card summary-stat">
+        <div class="summary-num" id="sum-completadas">0</div>
+        <div class="summary-label">Tareas completadas hoy</div>
+      </div>
+      <div class="card summary-stat">
+        <div class="summary-num" id="sum-pendientes">0</div>
+        <div class="summary-label">Tareas pendientes</div>
+      </div>
+      <div class="card summary-stat">
+        <div class="summary-num" id="sum-equipo">0</div>
+        <div class="summary-label">Personas en el equipo</div>
+      </div>
+      <div class="card summary-stat">
+        <div class="summary-num" id="sum-eventos">0</div>
+        <div class="summary-label">Eventos esta semana</div>
+      </div>
+    </div>
+
+    <!-- Widget: Equipo esta semana -->
+    <div class="card" id="equipo-semana-widget" style="margin-bottom:20px">
+      <div class="card-title">👥 Equipo esta semana</div>
+      <div id="equipo-semana-content"></div>
+    </div>
+
+    <!-- Snapshot read-only card -->
+    <div id="snapshot-card" style="display:none" class="snapshot-card">
+      <div class="snapshot-card-title">📸 Snapshot cargado</div>
+      <div class="snapshot-kpis" id="snapshot-kpis-content"></div>
+    </div>
+
+    <!-- ── BLOQUE: COMERCIAL ── -->
+    <div class="theme-block-header">💰 Comercial</div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">💰 Ventas de la Semana</div>
+      <div class="kpi-value" id="res-ventas" style="color:var(--success)">—</div>
+      <div class="kpi-label">Objetivo: <span id="res-ventas-obj">—</span></div>
+      <div class="progress-wrap">
+        <div class="progress-label"><span>% conseguido</span><span id="res-ventas-pct">—</span></div>
+        <div class="progress-bar"><div class="progress-fill green" id="res-ventas-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- ── BLOQUE: CLIENTES ── -->
+    <div class="theme-block-header">🌟 Clientes</div>
+
+    <div class="nps-compact-grid" style="margin-bottom:16px" id="res-nps-grid">
+      <div class="card nps-compact-card">
+        <div class="nps-compact-title">🛍️ Shopping</div>
+        <div class="nps-compact-value" id="res-nps-shopping">—</div>
+      </div>
+      <div class="card nps-compact-card">
+        <div class="nps-compact-title">🎧 Support</div>
+        <div class="nps-compact-value" id="res-nps-support">—</div>
+      </div>
+      <div class="card nps-compact-card">
+        <div class="nps-compact-title">🔧 APU</div>
+        <div class="nps-compact-value" id="res-nps-apu">—</div>
+      </div>
+      <div class="card nps-compact-card">
+        <div class="nps-compact-title">🎓 T@A</div>
+        <div class="nps-compact-value" id="res-nps-taa">—</div>
+      </div>
+    </div>
+
+    <!-- ── BLOQUE: PRODUCTIVIDAD PERSONAL ── -->
+    <div class="theme-block-header">🧠 Productividad Personal</div>
+
+    <div class="grid-2-3" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-title">🔥 Tareas prioritarias pendientes</div>
+        <div class="task-list" id="res-tasks"></div>
+        <div class="empty-state" id="res-tasks-empty" style="padding:30px 0">
+          <div class="empty-state-icon">✅</div>
+          <p>¡Todo al día! No hay tareas urgentes.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📅 Próximas 2 semanas</div>
+        <div id="week-widget-content"></div>
+        <div class="empty-state" id="week-widget-empty" style="padding:20px 0;display:none">
+          <div class="empty-state-icon">📅</div>
+          <p>No hay eventos en las próximas 2 semanas.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">📉 Tendencia de tareas</div>
+      <div class="trend-chart-legend">
+        <span><span class="trend-legend-dot" style="background:var(--accent)"></span>Creadas</span>
+        <span><span class="trend-legend-dot" style="background:var(--success)"></span>Completadas</span>
+      </div>
+      <div class="trend-chart-wrap" id="trend-chart-wrap"></div>
+      <div id="trend-stats" style="margin-top:10px;font-size:13px;color:var(--text-secondary)"></div>
+    </div>
+
+    <!-- F1 — Radar KPIs -->
+    <div class="card" id="radar-card" style="margin-bottom:16px">
+      <div class="card-title">📡 Radar KPIs</div>
+      <div id="radar-chart-wrap"></div>
+    </div>
+
+  </section>
+
+  <!-- ─── ROUTINE ─── -->
+  <section class="section" id="tab-routine">
+    <div id="routine-content"></div>
+  </section>
+
+  <!-- ─── KPIs ─── -->
+  <section class="section" id="tab-kpis">
+    <!-- K3 Streak Alerts -->
+    <div id="kpi-streak-alerts" class="streak-alerts-wrap" style="display:none;margin-bottom:16px"></div>
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
+      <div>
+        <div class="page-title">KPIs de Tienda</div>
+        <div class="page-subtitle" style="margin-bottom:0">Edita los valores directamente. Se guardan automáticamente.</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:30px;flex-wrap:wrap">
+        <span class="saved-flash" id="kpi-saved">✓ Guardado</span>
+        <input class="task-input" id="kpi-week-context" placeholder="📝 Contexto de la semana (ej: Lanzamiento iPhone 16, Back to School...)" style="min-width:260px;flex:1">
+        <button class="btn btn-primary" onclick="shareRecapSemanal()" style="font-size:13px">📋 Recap Semanal</button>
+      </div>
+    </div>
+
+    <!-- OCR: Autocompletar KPIs desde captura de pantalla -->
+    <div class="card" style="background:var(--surface2);border:1px dashed var(--border);margin-bottom:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div>
+          <h4 style="margin:0 0 4px 0;">📷 Autocompletar con captura</h4>
+          <p style="font-size:12px;color:var(--text-secondary);margin:0;">Sube un pantallazo de React App (Sales, Traffic, Conversion) y se rellenarán los KPIs automáticamente.</p>
+        </div>
+        <label class="btn btn-primary" style="cursor:pointer;white-space:nowrap;">
+          Escanear imagen
+          <input type="file" id="ocr-input" accept="image/*" style="display:none;" onchange="procesarCapturaOCR(event)">
+        </label>
+      </div>
+      <div id="ocr-status" style="font-size:12px;color:var(--accent);margin-top:8px;display:none;line-height:1.6;"></div>
+    </div>
+
+    <!-- Notas y observaciones — aparece primero para completar el contexto antes de las cifras -->
+    <div class="card section-gap" style="margin-top:18px">
+      <div class="card-title">📋 Notas y observaciones de la semana</div>
+      <textarea class="notes-area" id="kpi-notes" placeholder="Tendencias, factores externos, acciones de mejora..." style="min-height:120px" oninput="saveKPIs()"></textarea>
+    </div>
+
+    <!-- Hidden compatibility inputs used by saveKPIs / checkKPIAlerts / saveKPISnapshot -->
+    <input type="hidden" id="kpi-upt"      value="0">
+    <input type="hidden" id="kpi-obj-upt"  value="1.5">
+    <input type="hidden" id="kpi-ac"       value="0%">
+    <input type="hidden" id="kpi-acc"      value="0%">
+    <input type="hidden" id="kpi-clicount" value="0">
+
+    <!-- KPI Health Summary — at-a-glance status bar -->
+    <div id="kpi-health-summary" style="margin-bottom:18px"></div>
+
+    <!-- KPI Smart Insights — auto-generated analysis -->
+    <div id="kpi-smart-insights" style="margin-bottom:18px"></div>
+
+    <!-- ⭐ KPIs CRÍTICOS -->
+    <div class="kpi-group">
+      <div class="kpi-group-header">⭐ KPIs Críticos</div>
+      <div class="kpi-critical-grid">
+
+        <!-- 1. Ventas Totales (original IDs: kpi-ventas / kpi-obj-ventas) -->
+        <div class="card kpi-critical-card">
+          <div class="card-title">💰 Ventas Totales</div>
+          <input class="kpi-editable" id="kpi-ventas" value="0 €" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-ventas" value="0 €" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-ventas">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill green" id="bar-ventas" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año anterior: <input class="kpi-yow-input" id="kpi-yoy-ventas" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-ventas"></span>
+            <span class="kpi-yow-label">Semana ant.: <input class="kpi-yow-input" id="kpi-wow-ventas" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-ventas"></span>
+          </div>
+        </div>
+
+        <!-- 2. NPS Tienda (original IDs: kpi-nps / kpi-obj-nps) -->
+        <div class="card kpi-critical-card">
+          <div class="card-title">⭐ NPS Tienda</div>
+          <input class="kpi-editable" id="kpi-nps" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps" value="70" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-nps">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-nps" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año anterior: <input class="kpi-yow-input" id="kpi-yoy-nps" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-nps"></span>
+            <span class="kpi-yow-label">Semana ant.: <input class="kpi-yow-input" id="kpi-wow-nps" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-nps"></span>
+          </div>
+        </div>
+
+        <!-- 3. DTA Horas (new IDs: kpi-dta / kpi-obj-dta — operacional, sin YoY/WoW) -->
+        <div class="card kpi-critical-card">
+          <div class="card-title">⏰ DTA Horas</div>
+          <input class="kpi-editable" id="kpi-dta" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-dta" value="0" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-dta">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-dta" style="width:0%"></div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- GRUPO 1 — Ventas (4 KPIs) -->
+    <div class="kpi-group">
+      <div class="kpi-group-header">💰 Grupo 1 — Ventas</div>
+      <div class="grid-4">
+
+        <!-- Ventas Totales — mirror display (inputs live in Critical section above) -->
+        <div class="card kpi-mirror-card">
+          <div class="card-title">💰 Ventas Totales <span class="kpi-ref-badge">↑ crítico</span></div>
+          <div class="kpi-editable" style="font-size:28px;cursor:default" id="mirror-ventas">—</div>
+          <div class="kpi-label">Obj: <span id="mirror-obj-ventas">—</span></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="mirror-pct-ventas">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill green" id="mirror-bar-ventas" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row" style="padding-top:8px;margin-top:8px">
+            <span id="mirror-badge-yoy-ventas"></span><span style="font-size:10px;color:var(--text-secondary)">YoY</span>
+            <span id="mirror-badge-wow-ventas"></span><span style="font-size:10px;color:var(--text-secondary)">WoW</span>
+          </div>
+        </div>
+
+        <!-- Ventas Business -->
+        <div class="card">
+          <div class="card-title">💼 Ventas Business</div>
+          <input class="kpi-editable" id="kpi-ventas-business" value="0 €" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-ventas-business" value="0 €" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-ventas-business">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill green" id="bar-ventas-business" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-ventas-business" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-ventas-business"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-ventas-business" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-ventas-business"></span>
+          </div>
+        </div>
+
+        <!-- Ventas APU -->
+        <div class="card">
+          <div class="card-title">📱 Ventas APU</div>
+          <input class="kpi-editable" id="kpi-ventas-apu" value="0 €" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-ventas-apu" value="0 €" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-ventas-apu">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill green" id="bar-ventas-apu" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-ventas-apu" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-ventas-apu"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-ventas-apu" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-ventas-apu"></span>
+          </div>
+        </div>
+
+        <!-- Ventas SFS -->
+        <div class="card">
+          <div class="card-title">🚚 Ventas SFS</div>
+          <input class="kpi-editable" id="kpi-ventas-sfs" value="0 €" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-ventas-sfs" value="0 €" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-ventas-sfs">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill green" id="bar-ventas-sfs" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-ventas-sfs" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-ventas-sfs"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-ventas-sfs" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-ventas-sfs"></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- GRUPO 2 — NPS (5 métricas) -->
+    <div class="kpi-group">
+      <div class="kpi-group-header">⭐ Grupo 2 — NPS</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+
+        <!-- NPS Tienda — mirror display (inputs live in Critical section above) -->
+        <div class="card kpi-mirror-card">
+          <div class="card-title">⭐ NPS Tienda <span class="kpi-ref-badge">↑ crítico</span></div>
+          <div class="kpi-editable" style="font-size:28px;cursor:default" id="mirror-nps">—</div>
+          <div class="kpi-label">Obj: <span id="mirror-obj-nps">—</span></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="mirror-pct-nps">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="mirror-bar-nps" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row" style="padding-top:8px;margin-top:8px">
+            <span id="mirror-badge-yoy-nps"></span><span style="font-size:10px;color:var(--text-secondary)">YoY</span>
+            <span id="mirror-badge-wow-nps"></span><span style="font-size:10px;color:var(--text-secondary)">WoW</span>
+          </div>
+        </div>
+
+        <!-- NPS Shopping -->
+        <div class="card">
+          <div class="card-title">🛍️ NPS Shopping</div>
+          <input class="kpi-editable" id="kpi-nps-shopping" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps-shopping" value="70" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-nps-shopping">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-nps-shopping" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps-shopping" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-nps-shopping"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps-shopping" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-nps-shopping"></span>
+          </div>
+        </div>
+
+        <!-- NPS APU -->
+        <div class="card">
+          <div class="card-title">🔧 NPS APU</div>
+          <input class="kpi-editable" id="kpi-nps-apu" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps-apu" value="70" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-nps-apu">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-nps-apu" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps-apu" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-nps-apu"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps-apu" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-nps-apu"></span>
+          </div>
+        </div>
+
+        <!-- NPS Support -->
+        <div class="card">
+          <div class="card-title">🎧 NPS Support</div>
+          <input class="kpi-editable" id="kpi-nps-support" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps-support" value="70" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-nps-support">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-nps-support" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps-support" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-nps-support"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps-support" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-nps-support"></span>
+          </div>
+        </div>
+
+        <!-- NPS T@A -->
+        <div class="card">
+          <div class="card-title">🎓 NPS T@A</div>
+          <input class="kpi-editable" id="kpi-nps-taa" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps-taa" value="70" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-nps-taa">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-nps-taa" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps-taa" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-nps-taa"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps-taa" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-nps-taa"></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- GRUPO 3 — Tráfico y Conversión (2 KPIs) -->
+    <div class="kpi-group">
+      <div class="kpi-group-header">👣 Grupo 3 — Tráfico y Conversión</div>
+      <div class="grid-2">
+
+        <!-- Tráfico -->
+        <div class="card">
+          <div class="card-title">👣 Tráfico</div>
+          <input class="kpi-editable" id="kpi-trafico" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-trafico" value="0" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-trafico">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-trafico" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-trafico" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-trafico"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-trafico" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-trafico"></span>
+          </div>
+        </div>
+
+        <!-- Conversión (original IDs: kpi-conv / kpi-obj-conv) -->
+        <div class="card">
+          <div class="card-title">🔄 Conversión</div>
+          <input class="kpi-editable" id="kpi-conv" value="0%" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-conv" value="30%" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-conv">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill orange" id="bar-conv" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-conv" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-conv"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-conv" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-conv"></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- GRUPO 4 — KPIs Operacionales (7 KPIs, compact, sin YoY/WoW) -->
+    <div class="kpi-group">
+      <div class="kpi-group-header">🎯 Grupo 4 — KPIs Operacionales</div>
+      <div class="kpi-compact-grid">
+
+        <div class="card kpi-compact-card">
+          <div class="card-title">🎯 Intros / 1K</div>
+          <input class="kpi-editable kpi-editable-sm" id="kpi-intros-1k" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Obj: <input class="kpi-obj-input" id="kpi-obj-intros-1k" value="0" oninput="saveKPIs()"></div>
+        </div>
+
+        <div class="card kpi-compact-card">
+          <div class="card-title">⏱️ Timely %</div>
+          <input class="kpi-editable kpi-editable-sm" id="kpi-timely" value="0%" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Obj: <input class="kpi-obj-input" id="kpi-obj-timely" value="0%" oninput="saveKPIs()"></div>
+        </div>
+
+        <div class="card kpi-compact-card">
+          <div class="card-title">💬 C&amp;P Usage %</div>
+          <input class="kpi-editable kpi-editable-sm" id="kpi-cp-usage" value="0%" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Obj: <input class="kpi-obj-input" id="kpi-obj-cp-usage" value="0%" oninput="saveKPIs()"></div>
+        </div>
+
+        <div class="card kpi-compact-card">
+          <div class="card-title">🎓 GB Conv. %</div>
+          <input class="kpi-editable kpi-editable-sm" id="kpi-gb-conv" value="0%" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Obj: <input class="kpi-obj-input" id="kpi-obj-gb-conv" value="0%" oninput="saveKPIs()"></div>
+        </div>
+
+        <div class="card kpi-compact-card">
+          <div class="card-title">🔍 Intros / 1K Sessions</div>
+          <input class="kpi-editable kpi-editable-sm" id="kpi-intros-sessions" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Obj: <input class="kpi-obj-input" id="kpi-obj-intros-sessions" value="0" oninput="saveKPIs()"></div>
+        </div>
+
+        <!-- DTA Horas — mirror display (inputs live in Critical section above) -->
+        <div class="card kpi-compact-card kpi-mirror-card">
+          <div class="card-title">⏰ DTA Horas <span class="kpi-ref-badge">↑ crítico</span></div>
+          <div class="kpi-editable kpi-editable-sm" style="cursor:default" id="mirror-dta">—</div>
+          <div class="kpi-label">Obj: <span id="mirror-obj-dta">—</span></div>
+        </div>
+
+        <div class="card kpi-compact-card">
+          <div class="card-title">📱 iPhone TAT días</div>
+          <input class="kpi-editable kpi-editable-sm" id="kpi-iphone-tat" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Obj: <input class="kpi-obj-input" id="kpi-obj-iphone-tat" value="0" oninput="saveKPIs()"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- COMMITMENTS KPIs MIRROR -->
+    <div class="card" id="commitments-kpis-mirror-card" style="margin-top:24px">
+      <div class="card-title">📋 KPIs de Commitments Q3 FY26</div>
+      <div class="page-subtitle" style="margin-bottom:16px">KPIs de seguimiento de los compromisos del quarter — actualízalos en la sección Commitments.</div>
+      <div id="commitments-kpis-mirror-content" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div>
+    </div>
+
+    <!-- Histórico — debajo de Commitments KPIs para coherencia visual -->
+    <div class="card section-gap" id="kpi-history-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleHistorico()">
+        <div class="card-title" style="margin-bottom:0">📈 Histórico</div>
+        <span id="historico-toggle-icon">▼</span>
+      </div>
+      <div id="historico-body" style="display:none;margin-top:14px">
+        <div class="kpi-history-pills">
+          <button class="kpi-history-pill active" id="pill-2w"      onclick="setKPIHistoryView('2w',this)">Sem. actual vs pasada</button>
+          <button class="kpi-history-pill"         id="pill-4w"      onclick="setKPIHistoryView('4w',this)">4 semanas</button>
+          <button class="kpi-history-pill"         id="pill-quarter" onclick="setKPIHistoryView('quarter',this)">Quarter</button>
+        </div>
+        <!-- Selector dinámico de métricas (hasta 5 simultáneas) -->
+        <div class="kpi-metric-selector-wrap">
+          <div class="kpi-metric-selector-label">Métricas a mostrar <span class="kpi-metric-hint">(hasta 5)</span></div>
+          <div class="kpi-metric-selector" id="kpi-metric-selector"></div>
+        </div>
+        <div class="kpi-chart-legend" id="kpi-chart-legend"></div>
+        <div class="kpi-chart-wrap" id="kpi-chart-wrap"></div>
+        <div id="kpi-history-table-wrap"></div>
+        <div class="empty-state" id="kpi-history-empty" style="padding:24px 0">
+          <div class="empty-state-icon">📊</div>
+          <p>Aún no hay datos. Guarda el primer recap semanal con el botón de arriba.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparativa semanal — debajo del Histórico -->
+    <div class="card section-gap" id="comparativa-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleComparativa()">
+        <div class="card-title" style="margin-bottom:0">📊 Comparativa semanal</div>
+        <span id="comparativa-toggle-icon">▼</span>
+      </div>
+      <div id="comparativa-body" style="display:none;margin-top:14px">
+        <!-- Selector dinámico de métricas para comparativa (hasta 5 simultáneas) -->
+        <div class="kpi-metric-selector-wrap">
+          <div class="kpi-metric-selector-label">Métricas a mostrar <span class="kpi-metric-hint">(hasta 5)</span></div>
+          <div class="kpi-metric-selector" id="comparativa-metric-selector"></div>
+        </div>
+        <div id="comparativa-table-wrap"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── EQUIPO ─── -->
+  <section class="section" id="tab-equipo">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+      <div>
+        <div class="page-title">Mi Equipo</div>
+        <div class="page-subtitle">Personas en turno, estado y notas de la semana.</div>
+      </div>
+      <button class="btn btn-primary" onclick="toggleForm('add-team-form')">+ Añadir persona</button>
+    </div>
+
+    <div class="add-section" id="add-team-form">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div><div class="field-label">Nombre</div><input class="task-input" id="new-team-name" placeholder="Nombre completo" style="min-width:180px"></div>
+        <div><div class="field-label">Rol</div><input class="task-input" id="new-team-role" placeholder="Ej: Specialist, Expert..." style="min-width:160px"></div>
+        <div><div class="field-label">Email</div><input class="task-input" id="new-team-email" type="email" placeholder="email@apple.com" style="min-width:180px"></div>
+        <button class="btn btn-primary" onclick="addTeamMember()">Añadir</button>
+        <button class="btn btn-ghost"   onclick="toggleForm('add-team-form')">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="team-grid" id="team-grid"></div>
+    <div id="hidden-leaders-section" class="add-section" style="display:none;margin-top:14px;padding:14px"></div>
+    <div class="empty-state" id="team-empty">
+      <div class="empty-state-icon">👥</div>
+      <p>Añade los miembros de tu equipo con el botón de arriba.</p>
+    </div>
+
+    <!-- Team Health Dashboard -->
+    <div class="card section-gap" id="team-health-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:0">📊 Salud del Equipo</div>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="switchGroup('equipo','profiles')">👤 Ver todos los perfiles →</button>
+      </div>
+      <div id="team-health-wrap"></div>
+    </div>
+
+    <!-- Kanban situación del equipo -->
+    <div class="card section-gap" id="kanban-section">
+      <div class="card-title">🧠 Situación del equipo</div>
+      <div class="kanban-board" id="kanban-board"></div>
+    </div>
+
+    <!-- PR3 Feature 1: Reconocimientos con Scoreboard gamificado -->
+    <div class="card section-gap" id="recog-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:0">🏆 Reconocimientos</div>
+        <div style="display:flex;gap:6px">
+          <button class="filter-pill active" id="recog-view-lista" onclick="switchRecogView('lista')">📋 Lista</button>
+          <button class="filter-pill" id="recog-view-scoreboard" onclick="switchRecogView('scoreboard')">🏆 Scoreboard</button>
+        </div>
+      </div>
+
+      <!-- Vista Lista -->
+      <div id="recog-lista-view">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+          <div>
+            <div class="field-label">Persona</div>
+            <select class="task-select" id="recog-person" style="min-width:160px"></select>
+          </div>
+          <div>
+            <div class="field-label">Categoría</div>
+            <select class="task-select" id="recog-category" style="min-width:140px">
+              <option value="resultado">🎯 Resultado</option>
+              <option value="innovacion">💡 Innovación</option>
+              <option value="colaboracion">🤝 Colaboración</option>
+              <option value="cliente">🌟 Cliente</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <div class="field-label">Descripción</div>
+            <input class="task-input" id="recog-desc" placeholder="¿Qué hizo bien? ..." style="width:100%">
+          </div>
+          <div>
+            <div class="field-label">Fecha</div>
+            <input class="task-input" id="recog-date" type="date" style="min-width:auto;flex:none">
+          </div>
+          <button class="btn btn-primary" onclick="addRecog()">Añadir 🏆</button>
+        </div>
+        <div id="recog-list"></div>
+        <div class="empty-state" id="recog-empty" style="padding:24px 0">
+          <div class="empty-state-icon">🏆</div>
+          <p>Aún no hay reconocimientos. ¡Celebra los logros del equipo!</p>
+        </div>
+      </div>
+
+      <!-- Vista Scoreboard -->
+      <div id="recog-scoreboard-view" style="display:none">
+        <div id="recog-scoreboard-content"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MANAGER PROFILES ─── -->
+  <section class="section" id="tab-profiles">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+      <div>
+        <div class="page-title">👤 Perfiles de Managers</div>
+        <div class="page-subtitle">Ficha completa de cada manager: desarrollo, ratings trimestrales, feedback y evolución.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="filter-pill active" id="profiles-view-grid" onclick="setProfilesView('grid')">📊 Grid</button>
+        <button class="filter-pill" id="profiles-view-detail" onclick="setProfilesView('detail')">📋 Detalle</button>
+      </div>
+    </div>
+
+    <!-- Grid view of all managers -->
+    <div id="profiles-grid-view">
+      <div class="profiles-grid" id="profiles-grid"></div>
+    </div>
+
+    <!-- Detail view for a single manager -->
+    <div id="profiles-detail-view" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="closeProfileDetail()">← Volver a perfiles</button>
+        <div class="page-title" style="margin-bottom:0" id="profile-detail-name"></div>
+      </div>
+      <div id="profile-detail-content"></div>
+    </div>
+  </section>
+
+  <!-- ─── TAREAS ─── -->
+  <section class="section" id="tab-tareas">
+    <div class="page-title">Tareas</div>
+    <div class="page-subtitle">Gestiona tus prioridades del día y la semana.</div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">Nueva tarea</div>
+      <div class="task-input-row">
+        <input class="task-input" id="new-task" placeholder="Descripción de la tarea..." onkeydown="if(event.key==='Enter')addTask()" style="min-width:240px">
+        <select class="task-select" id="new-task-pri">
+          <option value="alta">🔴 Alta</option>
+          <option value="media" selected>🟡 Media</option>
+          <option value="baja">🟢 Baja</option>
+        </select>
+        <input class="task-input" id="new-task-date" type="date" style="min-width:auto;flex:none">
+        <input class="task-input" id="new-task-reminder" type="time" title="Hora de recordatorio" style="min-width:auto;flex:none">
+        <select class="task-select" id="task-reunion-origin" style="min-width:auto">
+          <option value="">Sin reunión asociada</option>
+        </select>
+        <select class="task-select" id="task-recurrence">
+          <option value="">Sin recurrencia</option>
+          <option value="daily">🔁 Diaria</option>
+          <option value="weekly">🔁 Semanal</option>
+          <option value="monthly">🔁 Mensual</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:4px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="new-task-urgente"> ⚡ Urgente</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:13px;white-space:nowrap;cursor:pointer"><input type="checkbox" id="new-task-importante"> ⭐ Importante</label>
+        <button class="btn btn-primary" onclick="addTask()">Añadir</button>
+      </div>
+    </div>
+
+    <!-- F5 — Eisenhower view toggle -->
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn-secondary" id="btn-view-lista" onclick="setTaskView('lista')">📋 Lista</button>
+      <button class="btn-secondary" id="btn-view-eisenhower" onclick="setTaskView('eisenhower')">🔲 Eisenhower</button>
+    </div>
+    <div id="eisenhower-wrap" style="display:none"></div>
+
+    <div class="filter-row">
+      <button class="filter-pill active" id="fp-todas"       onclick="setFilter('todas',this)">Todas</button>
+      <button class="filter-pill"        id="fp-pendientes"  onclick="setFilter('pendientes',this)">⏳ Pendientes</button>
+      <button class="filter-pill"        id="fp-alta"        onclick="setFilter('alta',this)">🔴 Alta prioridad</button>
+      <button class="filter-pill"        id="fp-media"       onclick="setFilter('media',this)">🟡 Media prioridad</button>
+      <button class="filter-pill"        id="fp-baja"        onclick="setFilter('baja',this)">🟢 Baja prioridad</button>
+      <button class="filter-pill"        id="fp-completadas" onclick="setFilter('completadas',this)">✅ Completadas</button>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;margin-left:auto" onclick="clearFilter()">✕ Limpiar</button>
+    </div>
+
+    <div class="task-list" id="task-list"></div>
+    <div class="empty-state" id="task-empty">
+      <div class="empty-state-icon">✅</div>
+      <p>No hay tareas. ¡Añade tu primera arriba!</p>
+    </div>
+  </section>
+
+  <!-- ─── AGENDA ─── -->
+  <section class="section" id="tab-agenda">
+    <!-- Header area with stats -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+      <div>
+        <div class="page-title">Agenda</div>
+        <div class="page-subtitle">Organiza tu semana y alcanza tus objetivos.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="openRecurringModal()">📅 Semana tipo</button>
+        <button class="btn btn-primary" onclick="toggleForm('add-event-form')">+ Nuevo evento</button>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="agenda-stats-bar">
+      <div class="agenda-stat-card">
+        <div class="agenda-stat-icon">📅</div>
+        <div class="agenda-stat-info">
+          <div class="agenda-stat-value" id="agenda-stat-today">0</div>
+          <div class="agenda-stat-label">Reuniones hoy</div>
+        </div>
+      </div>
+      <div class="agenda-stat-card">
+        <div class="agenda-stat-icon">📊</div>
+        <div class="agenda-stat-info">
+          <div class="agenda-stat-value" id="agenda-stat-week">0</div>
+          <div class="agenda-stat-label">Esta semana</div>
+        </div>
+      </div>
+      <div class="agenda-stat-card">
+        <div class="agenda-stat-icon">⏰</div>
+        <div class="agenda-stat-info">
+          <div class="agenda-stat-value" id="agenda-stat-next">—</div>
+          <div class="agenda-stat-label">Próximo evento</div>
+        </div>
+      </div>
+      <div class="agenda-stat-card">
+        <div class="agenda-stat-icon">🎯</div>
+        <div class="agenda-stat-info">
+          <div class="agenda-stat-value" id="agenda-stat-goals">0/0</div>
+          <div class="agenda-stat-label">Objetivos semana</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Event creation form -->
+    <div class="add-section" id="add-event-form">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div><div class="field-label">Título</div><input class="task-input" id="ev-title" placeholder="Reunión 1:1, formación..." style="min-width:200px"></div>
+        <div><div class="field-label">Fecha</div><input class="task-input" id="ev-date" type="date" style="min-width:auto;flex:none"></div>
+        <div><div class="field-label">Hora</div><input class="task-input" id="ev-time" type="time" style="min-width:auto;flex:none"></div>
+        <div><div class="field-label">Descripción (opcional)</div><input class="task-input" id="ev-desc" placeholder="Notas o lugar..." style="min-width:180px"></div>
+        <div>
+          <div class="field-label">Color</div>
+          <select class="task-select" id="ev-color" style="min-width:auto;flex:none">
+            <option value="blue">🔵 Comercial</option>
+            <option value="green">🟢 People</option>
+            <option value="orange">🟠 ER</option>
+            <option value="red">🔴 Mercado</option>
+            <option value="purple">🟣 One on One</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">Categoría</div>
+          <select class="task-select" id="ev-category" style="min-width:auto;flex:none">
+            <option value="reunion">📋 Reunión</option>
+            <option value="formacion">🎓 Formación</option>
+            <option value="recordatorio">🔔 Recordatorio</option>
+            <option value="focus">🔒 Focus Time</option>
+            <option value="personal">⭐ Personal</option>
+            <option value="otro">📌 Otro</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">Manager</div>
+          <select class="task-select" id="ev-manager" style="min-width:auto;flex:none">
+            <option value="">— Sin manager —</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="addEvent()">Añadir</button>
+        <button class="btn btn-ghost" onclick="toggleForm('add-event-form')">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Main content layout (2-column on desktop) -->
+    <div class="agenda-layout">
+
+      <!-- Left sidebar -->
+      <div class="agenda-sidebar">
+
+        <!-- Weekly Goals widget -->
+        <div class="agenda-goals-card">
+          <div class="agenda-goals-header">🎯 Objetivos de la Semana</div>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <input class="task-input" id="agenda-goal-input" placeholder="Añadir objetivo..." style="flex:1;min-width:0">
+            <button class="btn btn-primary" onclick="addAgendaGoal()" style="padding:6px 12px" aria-label="Añadir objetivo">+</button>
+          </div>
+          <div id="agenda-goals-list" class="agenda-goals-list"></div>
+        </div>
+
+        <!-- Today's Schedule -->
+        <div class="agenda-today-card">
+          <div class="agenda-today-header">
+            <span>📋 Hoy</span>
+            <span class="agenda-today-date" id="agenda-today-date"></span>
+          </div>
+          <div id="agenda-today-list" class="agenda-today-list"></div>
+          <div class="empty-state" id="agenda-today-empty" style="display:none;padding:18px 0">
+            <div class="empty-state-icon" style="font-size:28px">🌤️</div>
+            <p style="font-size:13px">Sin eventos hoy. ¡Día libre!</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Main area -->
+      <div class="agenda-main">
+
+        <div class="agenda-view-toggle agenda-view-toggle-modern">
+          <button class="agenda-view-btn" id="agenda-btn-lista" onclick="setAgendaView('lista',this)">📋 Lista</button>
+          <button class="agenda-view-btn active" id="agenda-btn-semana" onclick="setAgendaView('semana',this)">📅 Semana</button>
+          <button class="agenda-view-btn" id="agenda-btn-mes" onclick="setAgendaView('mes',this)">🗓️ Mes</button>
+        </div>
+
+        <div id="agenda-list-view" style="display:none">
+          <div class="event-list" id="event-list"></div>
+          <div class="empty-state" id="event-empty">
+            <div class="empty-state-icon">📅</div>
+            <p>No hay eventos. Añade reuniones o recordatorios.</p>
+          </div>
+        </div>
+
+        <div id="agenda-week-view">
+          <div class="week-nav">
+            <button class="btn btn-ghost" style="font-size:13px" onclick="shiftWeek(-1)">‹ Anterior</button>
+            <div class="week-nav-title" id="week-nav-title">—</div>
+            <button class="btn btn-ghost" style="font-size:13px" onclick="shiftWeek(0)">Hoy</button>
+            <button class="btn btn-ghost" style="font-size:13px" onclick="shiftWeek(1)">Siguiente ›</button>
+            <button class="btn btn-ghost agenda-view-btn" id="week-multiview-btn" style="font-size:12px" onclick="toggleWeekMultiView(this)">📅 Vista 3 semanas</button>
+          </div>
+          <div class="week-grid-wrapper">
+            <div class="week-grid" id="week-grid"></div>
+          </div>
+        </div>
+
+        <div id="agenda-month-view" style="display:none">
+          <div class="month-nav">
+            <button class="btn btn-ghost" style="font-size:13px" onclick="shiftMonth(-1)">‹ Anterior</button>
+            <div class="month-nav-title" id="month-nav-title">—</div>
+            <button class="btn btn-ghost" style="font-size:13px" onclick="shiftMonth(0)">Hoy</button>
+            <button class="btn btn-ghost" style="font-size:13px" onclick="shiftMonth(1)">Siguiente ›</button>
+          </div>
+          <div class="month-grid" id="month-grid"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── REUNIONES ─── -->
+  <section class="section" id="tab-reuniones">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+      <div>
+        <div class="page-title">Reuniones</div>
+        <div class="page-subtitle">Gestiona tus reuniones, acuerdos y próximos pasos.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="openTemplateModal('reuniones')">📋 Usar plantilla</button>
+        <button class="btn btn-primary" onclick="toggleForm('add-reunion-form')">+ Nueva reunión</button>
+      </div>
+    </div>
+
+    <div class="add-section" id="add-reunion-form">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div><div class="field-label">Título</div><input class="task-input" id="re-title" placeholder="Nombre de la reunión..." style="min-width:220px"></div>
+        <div><div class="field-label">Fecha y hora</div><input class="task-input" id="re-datetime" type="datetime-local" style="min-width:auto;flex:none"></div>
+        <div><div class="field-label">Asistentes (separados por coma)</div><input class="task-input" id="re-attendees" placeholder="email1@apple.com, email2@..." style="min-width:280px"></div>
+        <div style="width:100%"><div class="field-label">Notas / Agenda inicial</div><textarea class="task-input" id="re-template-notes" rows="3" placeholder="Puntos de agenda, notas previas..." style="width:100%;resize:vertical"></textarea></div>
+        <div>
+          <div class="field-label">Estado</div>
+          <select class="task-select" id="re-status">
+            <option value="Programada">Programada</option>
+            <option value="En curso">En curso</option>
+            <option value="Completada">Completada</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="addReunion()">Añadir</button>
+        <button class="btn btn-ghost"   onclick="toggleForm('add-reunion-form')">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="reuniones-list"></div>
+    <div class="empty-state" id="reuniones-empty">
+      <div class="empty-state-icon">🗒️</div>
+      <p>No hay reuniones. ¡Añade la primera!</p>
+    </div>
+  </section>
+
+  <!-- ─── ACTAS ─── -->
+  <section class="section" id="tab-actas">
+    <div id="actas-back-bar" style="margin-bottom:16px;display:none">
+      <button class="btn btn-ghost" id="print-back-btn" onclick="showActaList()">← Volver</button>
+      <button class="btn btn-primary" onclick="window.print()" style="margin-left:8px">🖨️ Imprimir / Exportar PDF</button>
+      <button class="btn btn-ghost" id="acta-reenviar-btn" onclick="" style="margin-left:8px">📧 Reenviar acta</button>
+    </div>
+    <div id="actas-list-view">
+      <div class="page-title">Actas</div>
+      <div class="page-subtitle">Reuniones completadas con acta generada.</div>
+      <div id="actas-list"></div>
+      <div class="empty-state" id="actas-empty">
+        <div class="empty-state-icon">📄</div>
+        <p>No hay actas. Marca una reunión como "Completada" para que aparezca aquí.</p>
+      </div>
+    </div>
+    <div id="actas-detail-view" style="display:none">
+      <div id="acta-print-content"></div>
+    </div>
+  </section>
+
+  <!-- ─── NOTAS ─── -->
+  <section class="section" id="tab-notas">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+      <div>
+        <div class="page-title">Notas &amp; Reuniones</div>
+        <div class="page-subtitle">Gestión profesional del conocimiento — editor enriquecido, búsqueda y compartir con liderazgo.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="openTemplateModal('notas')">📋 Usar plantilla</button>
+        <button class="btn btn-ghost" onclick="switchGroup('operativa','actas')">📄 Ver actas</button>
+      </div>
+    </div>
+
+    <div class="notes-layout">
+      <!-- ─── PANEL IZQUIERDO: Lista de notas ─── -->
+      <div class="notes-sidebar">
+        <button class="btn btn-primary" style="width:100%" onclick="mnNewNote()">+ Nueva nota</button>
+        <input class="task-input" id="mn-search" placeholder="🔍 Buscar notas..." oninput="mnRenderList()" style="width:100%;box-sizing:border-box">
+        <!-- Filtro por tipo de reunión -->
+        <div id="mn-type-filter-bar" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+          <button class="mn-type-filter-btn active" data-type="" onclick="mnFilterType('')">Todas</button>
+          <button class="mn-type-filter-btn" data-type="webex" onclick="mnFilterType('webex')">🖥️ Webex</button>
+          <button class="mn-type-filter-btn" data-type="presencial" onclick="mnFilterType('presencial')">👥 Presencial</button>
+          <button class="mn-type-filter-btn" data-type="1:1" onclick="mnFilterType('1:1')">1:1</button>
+          <button class="mn-type-filter-btn" data-type="team" onclick="mnFilterType('team')">👨‍👩‍👧 Team</button>
+          <button class="mn-type-filter-btn" data-type="stakeholder" onclick="mnFilterType('stakeholder')">🌐 Stakeholder</button>
+          <button class="mn-type-filter-btn" data-type="call" onclick="mnFilterType('call')">📞 Call</button>
+          <button class="mn-type-filter-btn" data-type="er" onclick="mnFilterType('er')">📋 ER</button>
+        </div>
+        <div class="tags-container" id="mn-tags-filter"></div>
+        <div style="font-size:11px;color:var(--text-secondary)" id="mn-count"></div>
+        <div class="notes-list" id="mn-list"></div>
+      </div>
+
+      <!-- ─── PANEL DERECHO: Editor de nota ─── -->
+      <div id="mn-editor-panel">
+        <!-- Estado vacío -->
+        <div class="notes-empty" id="mn-empty-state">
+          <div class="notes-empty-icon">📝</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px">Sin nota seleccionada</div>
+          <div style="font-size:13px">Crea una nueva nota o selecciona una de la lista</div>
+        </div>
+
+        <!-- Editor (oculto hasta seleccionar/crear nota) -->
+        <div id="mn-editor" style="display:none">
+          <div class="note-editor-header">
+            <input class="note-title-input" id="mn-title" placeholder="Título de la reunión..." oninput="mnScheduleSave()">
+            <div class="note-type-selector" id="mn-type-selector">
+              <button class="note-type-btn active" data-type="webex" onclick="mnSetType('webex',this)">🖥️ Webex</button>
+              <button class="note-type-btn" data-type="presencial" onclick="mnSetType('presencial',this)">👥 Presencial</button>
+              <button class="note-type-btn" data-type="1:1" onclick="mnSetType('1:1',this)">1:1</button>
+              <button class="note-type-btn" data-type="team" onclick="mnSetType('team',this)">👨‍👩‍👧 Team</button>
+              <button class="note-type-btn" data-type="stakeholder" onclick="mnSetType('stakeholder',this)">🌐 Stakeholder</button>
+              <button class="note-type-btn" data-type="call" onclick="mnSetType('call',this)">📞 Call</button>
+              <button class="note-type-btn" data-type="er" onclick="mnSetType('er',this)">📋 ER</button>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <input class="task-input" type="datetime-local" id="mn-datetime" oninput="mnScheduleSave()" style="flex:1;min-width:180px">
+              <input class="task-input" id="mn-participants" placeholder="Participantes separados por coma..." oninput="mnScheduleSave()" style="flex:2;min-width:200px">
+            </div>
+            <input class="task-input" id="mn-tags" placeholder="#tag1 #tag2..." oninput="mnScheduleSave()" style="width:100%;box-sizing:border-box">
+          </div>
+
+          <!-- Barra de herramientas RTE -->
+          <div class="rte-toolbar">
+            <button class="rte-btn" title="Título H1" onclick="mnExecCmd('formatBlock','h1')">H1</button>
+            <button class="rte-btn" title="Título H2" onclick="mnExecCmd('formatBlock','h2')">H2</button>
+            <button class="rte-btn" title="Negrita" onclick="mnExecCmd('bold')"><b>B</b></button>
+            <button class="rte-btn" title="Cursiva" onclick="mnExecCmd('italic')"><i>I</i></button>
+            <button class="rte-btn" title="Lista no ordenada" onclick="mnExecCmd('insertUnorderedList')">•</button>
+            <button class="rte-btn" title="Lista ordenada" onclick="mnExecCmd('insertOrderedList')">1.</button>
+            <button class="rte-btn" title="Bloque Decisión" onclick="mnInsertBlock('decision')">✅ Decisión</button>
+            <button class="rte-btn" title="Bloque Acción" onclick="mnInsertBlock('action')">⚡ Acción</button>
+            <button class="rte-btn" title="Separador" onclick="mnExecCmd('insertHorizontalRule')">—</button>
+          </div>
+          <div class="rte-editor" id="mn-content" contenteditable="true" oninput="mnScheduleSave()"></div>
+
+          <!-- Notas privadas -->
+          <div style="margin-top:14px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-secondary)">
+              <input type="checkbox" id="mn-private-toggle" onchange="mnTogglePrivate()">
+              🔒 Notas privadas (no se comparten)
+            </label>
+            <div id="mn-private-section" style="display:none;margin-top:8px">
+              <div class="rte-editor" id="mn-private-content" contenteditable="true" oninput="mnScheduleSave()" style="min-height:120px"></div>
+            </div>
+          </div>
+
+          <!-- Barra de acciones -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center">
+            <button class="btn btn-primary" onclick="mnSave()">💾 Guardar</button>
+            <button class="btn btn-ghost" onclick="mnOpenTaskModal()">⚡ Crear tarea</button>
+            <button class="btn btn-ghost" onclick="mnShare()">📧 Compartir con Leadership</button>
+            <button class="btn btn-ghost" id="mn-pdf-btn" onclick="mnExportPDF()" style="opacity:0.4;pointer-events:none">📄 Exportar PDF</button>
+            <button class="btn btn-ghost" style="margin-left:auto;color:var(--danger)" onclick="mnDelete()">🗑️ Eliminar</button>
+            <span id="mn-save-status" style="font-size:12px;color:var(--text-secondary)"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Note print area (used for PDF export) -->
+    <div id="note-print-content"></div>
+
+    <!-- Mini-modal: Crear tarea desde nota -->
+    <div id="mn-task-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9000;align-items:center;justify-content:center">
+      <div style="background:var(--surface);border-radius:var(--radius);padding:28px;min-width:340px;max-width:480px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.2)">
+        <div style="font-size:16px;font-weight:700;margin-bottom:16px">⚡ Crear tarea</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">Contexto</div>
+        <input class="task-input" id="mn-task-context" readonly style="width:100%;box-sizing:border-box;margin-bottom:12px;opacity:0.7">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">Tarea</div>
+        <input class="task-input" id="mn-task-text" placeholder="Describe la tarea..." style="width:100%;box-sizing:border-box;margin-bottom:12px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <select class="task-input" id="mn-task-pri" style="flex:1">
+            <option value="alta">🔴 Alta</option>
+            <option value="media" selected>🟡 Media</option>
+            <option value="baja">🟢 Baja</option>
+          </select>
+          <input class="task-input" type="date" id="mn-task-date" style="flex:1">
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="mnCloseTaskModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="mnCreateTask()">Crear tarea</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">🗂️ Mantenimiento de datos</div>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">Archiva los datos del mes anterior para mantener el dashboard ágil.</p>
+      <button class="btn btn-ghost" onclick="archivePreviousMonth()">🗂️ Archivar mes anterior</button>
+      <button class="btn btn-ghost" style="margin-left:8px" onclick="viewArchive()">📂 Ver archivo</button>
+      <!-- Indicador de uso de almacenamiento -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="card-title" style="margin-bottom:10px">📊 Uso de almacenamiento</div>
+        <div id="storage-usage-indicator">
+          <div style="font-size:13px;color:var(--text-secondary)">Calculando...</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="card-title" style="margin-bottom:10px">💾 Copia de seguridad</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">Exporta todos tus datos a un fichero JSON o impórtalos desde una copia anterior.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-ghost" onclick="exportAllData()">📤 Exportar datos</button>
+          <label class="btn btn-ghost" style="cursor:pointer">
+            📥 Importar datos
+            <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importAllData(event)">
+          </label>
+          <span id="import-export-status" style="font-size:12px;color:var(--text-secondary)"></span>
+        </div>
+      </div>
+      <div id="archive-result" style="margin-top:10px;font-size:13px;color:var(--success)"></div>
+      <div id="archive-view" style="margin-top:14px;display:none"></div>
+    </div>
+  </section>
+
+  <!-- ─── FEEDBACK SBI ─── -->
+  <section class="section" id="tab-feedback">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+      <div>
+        <div class="page-title">💬 Generador de Feedback SBI</div>
+        <div class="page-subtitle">Modelo Situation–Behavior–Impact. Feedback claro, objetivo y accionable.</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <!-- Formulario -->
+      <div class="card">
+        <div class="card-title">✍️ Construye el feedback</div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:1;min-width:180px">
+              <div class="field-label">👤 Persona</div>
+              <select class="task-select" id="sbi-person" style="width:100%"></select>
+            </div>
+            <button class="btn btn-ghost" style="font-size:11px;white-space:nowrap" id="sbi-go-profile-btn" onclick="goToProfileFromSBI()" title="Ver perfil completo">👤 Ver perfil</button>
+          </div>
+          <div>
+            <div class="field-label">🏷️ Tipo</div>
+            <div style="display:flex;gap:8px">
+              <button class="filter-pill active" id="sbi-type-pos" onclick="setSBIType('positivo',this)">🌟 Positivo</button>
+              <button class="filter-pill" id="sbi-type-dev" onclick="setSBIType('desarrollo',this)">🌱 Desarrollo</button>
+            </div>
+          </div>
+          <div>
+            <div class="field-label">📍 Situación — ¿Cuándo y dónde ocurrió?</div>
+            <textarea class="notes-area" id="sbi-situation" placeholder="Ej: En la reunión del lunes por la mañana, durante el briefing del equipo..." style="min-height:80px;font-size:13px" oninput="generateSBI()"></textarea>
+          </div>
+          <div>
+            <div class="field-label">👁️ Comportamiento — ¿Qué observaste exactamente?</div>
+            <textarea class="notes-area" id="sbi-behavior" placeholder="Ej: Tomaste la iniciativa de proponer una solución antes de que yo terminara de explicar el problema..." style="min-height:80px;font-size:13px" oninput="generateSBI()"></textarea>
+          </div>
+          <div>
+            <div class="field-label">💥 Impacto — ¿Qué efecto tuvo?</div>
+            <textarea class="notes-area" id="sbi-impact" placeholder="Ej: El equipo se sintió más confiado y la reunión terminó 15 minutos antes con un plan claro..." style="min-height:80px;font-size:13px" oninput="generateSBI()"></textarea>
+          </div>
+          <div>
+            <div class="field-label">🔮 Pregunta de cierre (opcional)</div>
+            <input class="task-input" id="sbi-closing" placeholder="Ej: ¿Cómo crees que podríamos replicar esto la próxima vez?" style="width:100%" oninput="generateSBI()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card">
+          <div class="card-title">👁️ Vista previa</div>
+          <div id="sbi-preview" style="font-size:14px;line-height:1.8;color:var(--text-primary);white-space:pre-wrap;min-height:120px"></div>
+          <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="copySBI()">📋 Copiar</button>
+            <button class="btn btn-ghost" onclick="saveSBIToHistory()">💾 Guardar</button>
+            <button class="btn btn-ghost" onclick="clearSBIForm()">✕ Limpiar</button>
+          </div>
+          <div id="sbi-copy-msg" class="saved-flash" style="margin-top:8px">✓ Copiado al portapapeles</div>
+        </div>
+
+        <!-- Plantillas rápidas -->
+        <div class="card">
+          <div class="card-title">⚡ Plantillas rápidas</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <button class="btn btn-ghost" style="text-align:left;font-size:12px" onclick="loadSBITemplate('floor')">🏪 Floor</button>
+            <button class="btn btn-ghost" style="text-align:left;font-size:12px" onclick="loadSBITemplate('cliente')">🌟 Cliente</button>
+            <button class="btn btn-ghost" style="text-align:left;font-size:12px" onclick="loadSBITemplate('mejora')">📈 Mejora</button>
+            <button class="btn btn-ghost" style="text-align:left;font-size:12px" onclick="loadSBITemplate('liderazgo')">🤝 Liderazgo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial con filtro -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:0">📚 Historial de feedbacks</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="task-select" id="sbi-history-filter" style="min-width:150px;font-size:12px" onchange="renderSBIHistory()">
+            <option value="">Todos los managers</option>
+          </select>
+          <select class="task-select" id="sbi-history-type-filter" style="min-width:100px;font-size:12px" onchange="renderSBIHistory()">
+            <option value="">Todos</option>
+            <option value="positivo">🌟 Positivo</option>
+            <option value="desarrollo">🌱 Desarrollo</option>
+          </select>
+        </div>
+      </div>
+      <div id="sbi-history-list"></div>
+      <div class="empty-state" id="sbi-history-empty">
+        <div class="empty-state-icon">💬</div>
+        <p>Aún no has guardado ningún feedback. ¡Genera el primero arriba!</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── VOZ CLIENTE ─── -->
+  <!-- ─── VOZ CLIENTE ─── -->
+  <section class="section" id="tab-vozcli">
+    <div class="page-title">🗣️ Voz del Cliente</div>
+    <div class="page-subtitle">Los datos dicen el QUÉ, el feedback del cliente dice el POR QUÉ. Escucha, analiza y actúa.</div>
+
+    <!-- Action bar -->
+    <div class="voc-action-bar">
+      <button class="btn btn-primary" onclick="openMedalliaModal()">📄 Importar PDF Medallia</button>
+      <button class="btn btn-ghost" onclick="toggleVCForm()">➕ Nuevo feedback</button>
+      <button class="btn btn-ghost" onclick="exportVCData()">📥 Exportar datos</button>
+    </div>
+
+    <!-- Collapsible form -->
+    <div class="card voc-form-card" id="vc-form-card" style="display:none">
+      <div class="card-title">➕ Nuevo feedback del cliente</div>
+      <div class="voc-form-grid">
+        <div style="flex:3;min-width:240px">
+          <div class="field-label">Comentario literal del cliente</div>
+          <textarea class="notes-area" id="vc-text" placeholder="Escribe exactamente lo que dijo el cliente..." style="min-height:70px;font-size:13px"></textarea>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;min-width:160px">
+          <div>
+            <div class="field-label">Tipo</div>
+            <div style="display:flex;gap:6px">
+              <button class="filter-pill active" id="vc-type-pos" onclick="onVCTypeChange('positivo',this)">😊 Positivo</button>
+              <button class="filter-pill" id="vc-type-neg" onclick="onVCTypeChange('negativo',this)">😞 Negativo</button>
+            </div>
+          </div>
+          <div>
+            <div class="field-label">Área</div>
+            <select class="task-select" id="vc-area" style="width:100%">
+              <option value="shopping">🛍️ Shopping</option>
+              <option value="genius">🔧 Genius / APU</option>
+              <option value="business">💼 Business</option>
+              <option value="taa">🎓 T@A</option>
+              <option value="general">🏪 General tienda</option>
+            </select>
+          </div>
+          <div id="vc-root-cause-row" style="display:none">
+            <div class="field-label">🔍 Causa raíz</div>
+            <select class="task-select" id="vc-root-cause" style="width:100%">
+              <option value="">— Sin especificar —</option>
+              <option value="espera">⏱️ Tiempo de espera</option>
+              <option value="disponibilidad">📦 Disponibilidad de producto</option>
+              <option value="conocimiento">🧑‍💼 Conocimiento del Specialist</option>
+              <option value="genius">🔧 Experiencia Genius Bar / Soporte</option>
+              <option value="compra">💳 Proceso de compra / pago</option>
+              <option value="postventa">🔄 Experiencia postventa / devolución</option>
+              <option value="ambiente">🏪 Ambiente de tienda</option>
+              <option value="producto">📱 Problema de producto / hardware</option>
+              <option value="otra">🌐 Otra causa</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div>
+            <div class="field-label">Fecha</div>
+            <input class="task-input" id="vc-date" type="date" style="min-width:auto">
+          </div>
+          <button class="btn btn-primary" onclick="addVerbatim()">Añadir</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Dashboard Row -->
+    <div class="voc-kpi-row" id="vc-stats-grid"></div>
+
+    <!-- Insights & Recommendations -->
+    <div class="card voc-insights-card" id="vc-insights-card">
+      <div class="card-title">💡 Insights y Recomendaciones</div>
+      <div id="vc-insights-content">
+        <p style="color:var(--text-secondary);font-size:13px">Añade feedback para generar insights automáticos.</p>
+      </div>
+    </div>
+
+    <!-- Analytics Grid: Trend + Area Breakdown -->
+    <div class="voc-analytics-grid">
+      <div class="card">
+        <div class="card-title">📈 Tendencia semanal</div>
+        <div id="vc-trend-chart">
+          <p style="color:var(--text-secondary);font-size:13px">Se necesitan datos para mostrar la tendencia.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🏪 Distribución por área</div>
+        <div id="vc-area-chart">
+          <p style="color:var(--text-secondary);font-size:13px">Se necesitan datos para mostrar la distribución.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Grid: Pareto + NPS Correlation -->
+    <div class="voc-analytics-grid">
+      <div class="card">
+        <div class="card-title">📊 Análisis Pareto — Causas Raíz</div>
+        <div id="vc-pareto-wrap">
+          <p style="color:var(--text-secondary);font-size:13px">Registra feedback negativo con causa raíz para ver el análisis.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🎯 Correlación NPS & Feedback</div>
+        <div id="vc-correlation-content">
+          <p style="color:var(--text-secondary);font-size:13px">Añade feedback del cliente para ver la correlación.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Keywords -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">🔤 Palabras clave más frecuentes</div>
+      <div id="vc-keywords-cloud">
+        <p style="color:var(--text-secondary);font-size:13px">Se necesitan comentarios para analizar palabras clave.</p>
+      </div>
+    </div>
+
+    <!-- Feedback list with filters -->
+    <div class="card voc-feedback-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+        <div class="card-title" style="margin-bottom:0">📝 Registro de Feedback</div>
+        <input class="task-input" id="vc-search" type="text" placeholder="🔍 Buscar en comentarios..." style="max-width:260px;font-size:13px" oninput="renderVerbatims()">
+      </div>
+      <div class="filter-row" style="margin-bottom:16px">
+        <button class="filter-pill active" onclick="setVCFilter('todos',this)">Todos</button>
+        <button class="filter-pill" onclick="setVCFilter('positivo',this)">😊 Positivos</button>
+        <button class="filter-pill" onclick="setVCFilter('negativo',this)">😞 Negativos</button>
+        <button class="filter-pill" onclick="setVCFilter('shopping',this)">🛍️ Shopping</button>
+        <button class="filter-pill" onclick="setVCFilter('genius',this)">🔧 Genius</button>
+        <button class="filter-pill" onclick="setVCFilter('business',this)">💼 Business</button>
+        <button class="filter-pill" onclick="setVCFilter('taa',this)">🎓 T@A</button>
+        <button class="filter-pill" onclick="setVCFilter('general',this)">🏪 General</button>
+      </div>
+      <div id="vc-list"></div>
+      <div class="empty-state" id="vc-empty">
+        <div class="empty-state-icon">🗣️</div>
+        <p>Aún no hay feedback del cliente registrado. ¡Añade el primero!</p>
+      </div>
+    </div>
+
+    <!-- Medallia Imported Feedback Summary -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">🤖 Resumen de Feedback Medallia</div>
+      <div id="medallia-feedback-summary"><p style="color:var(--text-secondary);font-size:13px">No hay feedback importado desde PDF.</p></div>
+    </div>
+
+    <!-- Wow Moments -->
+    <div class="card voc-wow-section" style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+        <div class="card-title" style="margin-bottom:0">⭐ Wow Moments</div>
+        <button class="btn btn-ghost" onclick="toggleWowForm()" style="font-size:12px">➕ Añadir Wow Moment</button>
+      </div>
+      <!-- Wow form (collapsible) -->
+      <div id="wow-form-wrap" style="display:none;margin-bottom:16px;padding:16px;background:var(--surface2);border-radius:var(--radius-sm)">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:200px">
+            <div class="field-label">Título</div>
+            <input class="task-input" id="wow-title" placeholder="¿Qué pasó?">
+          </div>
+          <div style="min-width:140px">
+            <div class="field-label">Protagonista</div>
+            <select class="task-select" id="wow-person" style="width:100%"></select>
+          </div>
+          <div style="min-width:140px">
+            <div class="field-label">Categoría</div>
+            <select class="task-select" id="wow-category" style="width:100%">
+              <option value="servicio">🌟 Servicio excepcional</option>
+              <option value="sorpresa">🎁 Sorpresa al cliente</option>
+              <option value="conexion">🤝 Conexión humana</option>
+              <option value="creatividad">💡 Creatividad</option>
+              <option value="resultado">🏆 Resultado increíble</option>
+            </select>
+          </div>
+          <div>
+            <div class="field-label">Fecha</div>
+            <input class="task-input" id="wow-date" type="date">
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <div class="field-label">La historia</div>
+          <textarea class="notes-area" id="wow-story" placeholder="Cuenta la historia del Wow Moment..." style="min-height:60px;font-size:13px"></textarea>
+        </div>
+        <div style="margin-top:10px;text-align:right">
+          <button class="btn btn-primary" onclick="addWowMoment()">⭐ Guardar Wow Moment</button>
+        </div>
+      </div>
+      <div id="wow-list"></div>
+      <div class="empty-state" id="wow-empty">
+        <div class="empty-state-icon">⭐</div>
+        <p>No hay Wow Moments registrados. ¡Captura esos momentos mágicos!</p>
+      </div>
+    </div>
+
+    <!-- Import History (collapsible) -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        <div class="card-title" style="margin-bottom:0">📋 Historial de importaciones Medallia</div>
+        <span style="font-size:12px;color:var(--text-secondary)">▾</span>
+      </div>
+      <div id="medallia-import-history-wrap" style="display:none;margin-top:12px">
+        <div id="medallia-import-history"><p style="color:var(--text-secondary);font-size:13px">No hay importaciones registradas.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CONVERSACIONES ─── -->
+  <section class="section" id="tab-convs">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+      <div>
+        <div class="page-title">📋 Biblioteca de Conversaciones</div>
+        <div class="page-subtitle">Templates para las conversaciones de liderazgo más importantes. Basados en el modelo de coaching de Apple.</div>
+      </div>
+    </div>
+
+    <!-- Conversation log summary -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">📊 Registro de conversaciones por persona</div>
+      <div id="convs-log-summary" style="font-size:13px;color:var(--text-secondary)">Cargando...</div>
+    </div>
+
+    <div class="template-grid" id="convs-grid" style="margin-bottom:24px"></div>
+
+    <div id="convs-detail" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="closeConvDetail()">← Volver</button>
+        <div class="page-title" style="margin-bottom:0" id="convs-detail-title"></div>
+      </div>
+      <div class="grid-2">
+        <div id="convs-detail-content"></div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <div class="card-title">📝 Mis notas para esta conversación</div>
+            <div style="margin-bottom:8px;font-size:12px;color:var(--text-secondary)" id="convs-notes-person-label"></div>
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
+              <div style="flex:1;min-width:160px">
+                <div class="field-label">Con quién</div>
+                <select class="task-select" id="convs-notes-person" style="width:100%"></select>
+              </div>
+              <button class="btn btn-ghost" style="font-size:11px;white-space:nowrap" onclick="goToProfileFromConvs()" title="Ver perfil">👤 Perfil</button>
+            </div>
+            <textarea class="notes-area" id="convs-notes-text" placeholder="Apunta el contexto, lo que quieres trabajar, las respuestas..." style="min-height:160px;font-size:13px" oninput="saveConvNotes()"></textarea>
+            <div id="convs-notes-save-msg" class="saved-flash" style="margin-top:6px">✓ Guardado</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── EQUIPO: LEADERSHIP INDEX ─── -->
+  <section class="section" id="tab-ls-index">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+      <div>
+        <div class="page-title">📊 Leadership Index</div>
+        <div class="page-subtitle">Evaluación mensual del equipo de liderazgo y vista consolidada de ratings Q</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select class="task-select" id="ls-index-month" onchange="renderLeadershipIndex()" style="min-width:110px">
+          <option value="1">Enero</option>
+          <option value="2">Febrero</option>
+          <option value="3">Marzo</option>
+          <option value="4">Abril</option>
+          <option value="5">Mayo</option>
+          <option value="6">Junio</option>
+          <option value="7">Julio</option>
+          <option value="8">Agosto</option>
+          <option value="9">Septiembre</option>
+          <option value="10">Octubre</option>
+          <option value="11">Noviembre</option>
+          <option value="12">Diciembre</option>
+        </select>
+        <select class="task-select" id="ls-index-year" onchange="renderLeadershipIndex()" style="min-width:90px">
+          <option value="2025">2025</option>
+          <option value="2026" selected>2026</option>
+          <option value="2027">2027</option>
+          <option value="2028">2028</option>
+        </select>
+      </div>
+    </div>
+    <div class="card" style="overflow:hidden">
+      <div style="overflow-x:auto">
+        <div id="ls-index-wrap"></div>
+      </div>
+    </div>
+
+    <!-- Q Ratings Overview Panel - consolidated view -->
+    <div class="card section-gap">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:0">🎯 Ratings Q del Equipo — Vista Consolidada</div>
+        <select class="task-select" id="ls-q-overview-select" onchange="renderLSQOverview()" style="min-width:130px"></select>
+      </div>
+      <div id="ls-q-overview-wrap"></div>
+    </div>
+  </section>
+
+  <!-- ─── QBR ─── -->
+  <section class="section" id="tab-qbr">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <div class="page-title">📊 Quarterly Business Review</div>
+        <div class="page-subtitle">Histórico de revisiones por quarter · Negocio, cliente y resultados por área</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="field-label" style="margin:0">Quarter:</label>
+        <select class="task-select" id="qbr-quarter-select" onchange="qbrChangeQuarter(this.value)" style="min-width:140px"></select>
+        <span class="qbr-status-badge" id="qbr-status-badge"></span>
+        <button class="btn btn-primary" style="font-size:13px" onclick="openQBRNewModal()">+ Nuevo QBR</button>
+        <button class="btn btn-ghost" style="font-size:13px" onclick="closeQBR()">🔒 Cerrar Q</button>
+      </div>
+    </div>
+    <!-- QBR Health Dashboard — quarter score card -->
+    <div id="qbr-health-dashboard" style="margin-bottom:18px"></div>
+    <div id="qbr-content"></div>
+  </section>
+
+  <!-- ─── COMMITMENTS Q ─── -->
+  <section class="section" id="tab-commitments">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+      <div>
+        <div class="page-title">📋 Commitments del Quarter</div>
+        <div class="page-subtitle">Plan de negocio trimestral — Áreas de interés y KPIs de EMEIA.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="field-label" style="margin:0">Quarter:</label>
+        <select class="task-select" id="commitments-quarter-select" onchange="loadCommitmentsQuarter(this.value)" style="min-width:140px">
+          <!-- populated by initCommitmentsQuarterSelect() in dashboard.js -->
+        </select>
+        <button class="btn btn-ghost" style="font-size:13px" onclick="openCommitmentsInfoModal()">📖 Descripción completa</button>
+        <span class="saved-flash" id="commitments-saved">✓ Guardado</span>
+      </div>
+    </div>
+
+    <!-- Commitments Progress Overview — visual ring progress -->
+    <div id="commitments-progress-overview" style="margin-bottom:18px"></div>
+
+    <div id="commitments-content">
+
+      <!-- ════ ÁREA 1: Impulsar el crecimiento ════ -->
+      <div class="card" style="margin-bottom:24px;border-left:4px solid #4a9d6f" id="area-impulsar-crecimiento">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+          <div>
+            <div class="card-title" style="color:#4a9d6f;margin-bottom:4px">🟢 Impulsar el crecimiento</div>
+            <div style="font-size:13px;color:var(--text-secondary)">Planificando el crecimiento, creando propietarios y entablando relaciones.</div>
+          </div>
+        </div>
+
+        <!-- Subcategorías -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px">
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:#4a9d6f;margin-bottom:6px">Planificar el crecimiento</div>
+            <div style="font-size:12px;color:var(--text-secondary)">Los Managers se aseguran de que haya suficiente personal en todas las zonas para satisfacer la demanda de los clientes y fomentar el desarrollo del equipo.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:#4a9d6f;margin-bottom:6px">Crear propietarios</div>
+            <div style="font-size:12px;color:var(--text-secondary)">Los equipos se acercan activamente a todos los clientes, utilizan Conectar y Personalizar al principio de la conversación y les presentan soluciones adaptadas a sus necesidades.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:#4a9d6f;margin-bottom:6px">Entablar relaciones</div>
+            <div style="font-size:12px;color:var(--text-secondary)">Todo el equipo de la tienda pone de su parte para aumentar el número de Introducciones de Business y crear vínculos entre los clientes de empresa y Apple.</div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Indicadores clave de rendimiento</div>
+          <div class="commitments-kpi-grid" id="kpis-impulsar-crecimiento">
+            <!-- Renderizado por JS en PR3 -->
+            <!-- KPI: Customer-Impacting Actual % to Guidance (Q2 26 vs Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="customer-impacting">
+              <div class="commitments-kpi-name">Customer-Impacting Actual % to Guidance</div>
+              <div class="commitments-kpi-values">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q2 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-customer-impacting-anterior" placeholder="—" oninput="saveCommitmentsKPI('customer-impacting','anterior',this.value)">
+                </div>
+                <div class="commitments-kpi-arrow" id="arrow-customer-impacting">→</div>
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-customer-impacting-actual" placeholder="—" oninput="saveCommitmentsKPI('customer-impacting','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-customer-impacting"></div>
+            </div>
+            <!-- KPI: Timely Assistance (Q3 25 vs Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="timely-assistance">
+              <div class="commitments-kpi-name">Timely Assistance</div>
+              <div class="commitments-kpi-values">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 25</div>
+                  <input class="commitments-kpi-input" id="kpi-val-timely-assistance-anterior" placeholder="—" oninput="saveCommitmentsKPI('timely-assistance','anterior',this.value)">
+                </div>
+                <div class="commitments-kpi-arrow" id="arrow-timely-assistance">→</div>
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-timely-assistance-actual" placeholder="—" oninput="saveCommitmentsKPI('timely-assistance','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-timely-assistance"></div>
+            </div>
+            <!-- KPI: Drop-In Conversion YoY % (Q3 25 vs Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="dropin-conversion">
+              <div class="commitments-kpi-name">Drop-In Conversion YoY %</div>
+              <div class="commitments-kpi-values">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 25</div>
+                  <input class="commitments-kpi-input" id="kpi-val-dropin-conversion-anterior" placeholder="—" oninput="saveCommitmentsKPI('dropin-conversion','anterior',this.value)">
+                </div>
+                <div class="commitments-kpi-arrow" id="arrow-dropin-conversion">→</div>
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-dropin-conversion-actual" placeholder="—" oninput="saveCommitmentsKPI('dropin-conversion','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-dropin-conversion"></div>
+            </div>
+            <!-- KPI: Genius Bar: Conversion % (Q3 25 vs Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="geniusbar-conversion">
+              <div class="commitments-kpi-name">Genius Bar: Conversion %</div>
+              <div class="commitments-kpi-values">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 25</div>
+                  <input class="commitments-kpi-input" id="kpi-val-geniusbar-conversion-anterior" placeholder="—" oninput="saveCommitmentsKPI('geniusbar-conversion','anterior',this.value)">
+                </div>
+                <div class="commitments-kpi-arrow" id="arrow-geniusbar-conversion">→</div>
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-geniusbar-conversion-actual" placeholder="—" oninput="saveCommitmentsKPI('geniusbar-conversion','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-geniusbar-conversion"></div>
+            </div>
+            <!-- KPI: First Account Purchase / Day (Q2 26 vs Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="first-account">
+              <div class="commitments-kpi-name">First Account Purchase / Day</div>
+              <div class="commitments-kpi-values">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q2 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-first-account-anterior" placeholder="—" oninput="saveCommitmentsKPI('first-account','anterior',this.value)">
+                </div>
+                <div class="commitments-kpi-arrow" id="arrow-first-account">→</div>
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-first-account-actual" placeholder="—" oninput="saveCommitmentsKPI('first-account','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-first-account"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="commitments-acciones-section">
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">⚡ Acciones</div>
+          <div id="acciones-impulsar-crecimiento" class="commitments-acciones-list"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input class="task-input" id="nueva-accion-impulsar-crecimiento" placeholder="Escribe una acción: específica, cuantificable, con plazo definido..." style="flex:1" onkeydown="if(event.key==='Enter')addCommitmentsAccion('impulsar-crecimiento')">
+            <button class="btn btn-primary" style="font-size:13px" onclick="addCommitmentsAccion('impulsar-crecimiento')">+ Añadir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ ÁREA 2: Ofrecer experiencias únicas Apple ════ -->
+      <div class="card" style="margin-bottom:24px;border-left:4px solid #4a9d6f" id="area-experiencias-apple">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+          <div>
+            <div class="card-title" style="color:#4a9d6f;margin-bottom:4px">🟢 Ofrecer experiencias que solo se dan en Apple</div>
+            <div style="font-size:13px;color:var(--text-secondary)">Haciendo demos en cualquier momento y recomendando lo mejor de Apple.</div>
+          </div>
+        </div>
+
+        <!-- Subcategorías -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px">
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:#4a9d6f;margin-bottom:6px">Demos</div>
+            <div style="font-size:12px;color:var(--text-secondary)">Todos los puestos ofrecen activamente demos personalizadas a todos los clientes y les dan más motivos para comprar.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:#4a9d6f;margin-bottom:6px">Genius Bar</div>
+            <div style="font-size:12px;color:var(--text-secondary)">Los equipos de Genius hacen las reparaciones más cerca de los clientes para agilizar el proceso y reducir el impacto medioambiental.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:#4a9d6f;margin-bottom:6px">Today at Apple</div>
+            <div style="font-size:12px;color:var(--text-secondary)">Todos los puestos dan a conocer las sesiones de Today at Apple del día para ayudar a los clientes a descubrir, comprar y disfrutar la oferta de Apple.</div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Indicadores clave de rendimiento</div>
+          <div class="commitments-kpi-grid" id="kpis-experiencias-apple">
+            <!-- KPI: NPS Shared a Feature % + NPS Interactive Demo % (Q3 25 vs Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="nps-shared-feature">
+              <div class="commitments-kpi-name">NPS: Shared a Feature %<br><span style="font-weight:400;font-size:11px">NPS: Interactive Demo %</span></div>
+              <div class="commitments-kpi-values">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 25</div>
+                  <input class="commitments-kpi-input" id="kpi-val-nps-shared-feature-anterior" placeholder="—" oninput="saveCommitmentsKPI('nps-shared-feature','anterior',this.value)">
+                </div>
+                <div class="commitments-kpi-arrow" id="arrow-nps-shared-feature">→</div>
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-nps-shared-feature-actual" placeholder="—" oninput="saveCommitmentsKPI('nps-shared-feature','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-nps-shared-feature"></div>
+            </div>
+            <!-- KPI: Mac In-Store Repair % (Q2 26 vs Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="mac-instore-repair">
+              <div class="commitments-kpi-name">Mac: In-Store Repair %</div>
+              <div class="commitments-kpi-values">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q2 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-mac-instore-repair-anterior" placeholder="—" oninput="saveCommitmentsKPI('mac-instore-repair','anterior',this.value)">
+                </div>
+                <div class="commitments-kpi-arrow" id="arrow-mac-instore-repair">→</div>
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-mac-instore-repair-actual" placeholder="—" oninput="saveCommitmentsKPI('mac-instore-repair','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-mac-instore-repair"></div>
+            </div>
+            <!-- KPI: Delivered % (Drop-In) (Q3 25 vs Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="delivered-dropin">
+              <div class="commitments-kpi-name">Delivered % (Drop-In)</div>
+              <div class="commitments-kpi-values">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 25</div>
+                  <input class="commitments-kpi-input" id="kpi-val-delivered-dropin-anterior" placeholder="—" oninput="saveCommitmentsKPI('delivered-dropin','anterior',this.value)">
+                </div>
+                <div class="commitments-kpi-arrow" id="arrow-delivered-dropin">→</div>
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-delivered-dropin-actual" placeholder="—" oninput="saveCommitmentsKPI('delivered-dropin','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-delivered-dropin"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="commitments-acciones-section">
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">⚡ Acciones</div>
+          <div id="acciones-experiencias-apple" class="commitments-acciones-list"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input class="task-input" id="nueva-accion-experiencias-apple" placeholder="Escribe una acción: específica, cuantificable, con plazo definido..." style="flex:1" onkeydown="if(event.key==='Enter')addCommitmentsAccion('experiencias-apple')">
+            <button class="btn btn-primary" style="font-size:13px" onclick="addCommitmentsAccion('experiencias-apple')">+ Añadir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ ÁREA 3: Dar a los equipos lo que necesitan ════ -->
+      <div class="card" style="margin-bottom:24px;border-left:4px solid #4a9d6f" id="area-equipos-formacion">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+          <div>
+            <div class="card-title" style="color:#4a9d6f;margin-bottom:4px">🟢 Dar a los equipos lo que necesitan</div>
+            <div style="font-size:13px;color:var(--text-secondary)">Mediante la formación, la activación del rendimiento y Pulse.</div>
+          </div>
+        </div>
+
+        <!-- Subcategorías -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px">
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:#4a9d6f;margin-bottom:6px">Training</div>
+            <div style="font-size:12px;color:var(--text-secondary)">Los Managers se encargan de que se completen las formaciones para que los equipos puedan alcanzar la excelencia.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:#4a9d6f;margin-bottom:6px">Activación del rendimiento</div>
+            <div style="font-size:12px;color:var(--text-secondary)">Los Managers usan activamente los comportamientos de Fundamentos de Leadership para tener conexiones más relevantes.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:#4a9d6f;margin-bottom:6px">Pulse</div>
+            <div style="font-size:12px;color:var(--text-secondary)">Los Managers inculcan una mentalidad de equipo mediante la colaboración y la comunicación de los planes de acción a todos los puestos.</div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Indicadores clave de rendimiento</div>
+          <div class="commitments-kpi-grid" id="kpis-equipos-formacion">
+            <!-- KPI: Training Completion % (solo Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="training-completion">
+              <div class="commitments-kpi-name">New Required (&lt;30 Days) Training Completion Rate %</div>
+              <div class="commitments-kpi-values commitments-kpi-values--single">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-training-completion-actual" placeholder="—" oninput="saveCommitmentsKPI('training-completion','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-training-completion"></div>
+            </div>
+            <!-- KPI: Coach Connections (solo Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="coach-connections">
+              <div class="commitments-kpi-name">Coach Connections por persona del equipo cada 31 días</div>
+              <div class="commitments-kpi-values commitments-kpi-values--single">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-coach-connections-actual" placeholder="—" oninput="saveCommitmentsKPI('coach-connections','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-coach-connections"></div>
+            </div>
+            <!-- KPI: Pulse Action Plan (solo Q3 26) -->
+            <div class="card commitments-kpi-card" data-kpi-id="pulse-action-plan">
+              <div class="commitments-kpi-name">Stores Pulse Action Plan Completion %</div>
+              <div class="commitments-kpi-values commitments-kpi-values--single">
+                <div class="commitments-kpi-col">
+                  <div class="commitments-kpi-period">Real Q3 26</div>
+                  <input class="commitments-kpi-input" id="kpi-val-pulse-action-plan-actual" placeholder="—" oninput="saveCommitmentsKPI('pulse-action-plan','actual',this.value)">
+                </div>
+              </div>
+              <div class="commitments-kpi-trend" id="trend-pulse-action-plan"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="commitments-acciones-section">
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">⚡ Acciones</div>
+          <div id="acciones-equipos-formacion" class="commitments-acciones-list"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input class="task-input" id="nueva-accion-equipos-formacion" placeholder="Escribe una acción: específica, cuantificable, con plazo definido..." style="flex:1" onkeydown="if(event.key==='Enter')addCommitmentsAccion('equipos-formacion')">
+            <button class="btn btn-primary" style="font-size:13px" onclick="addCommitmentsAccion('equipos-formacion')">+ Añadir</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /commitments-content -->
+  </section>
+
+  <!-- ─── COMMITMENTS TIMELINE ─── -->
+  <section class="section" id="tab-commitments-timeline">
+    <div style="margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <div class="page-title">🗓️ EMEIA Q3 FY26 Overview</div>
+        <div class="page-subtitle">Marzo – Junio 2026 · 13 semanas · Hitos y compromisos por categoría</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="field-label" style="margin:0">Quarter:</label>
+        <select class="task-select" id="tl-quarter-select" onchange="setTLQuarter(this.value)" style="min-width:140px">
+          <!-- populated by initTLQuarterSelect() in dashboard.js -->
+        </select>
+        <button class="btn btn-primary" style="font-size:13px;display:flex;align-items:center;gap:6px" onclick="openTLModal()">
+          <span style="font-size:16px;line-height:1">+</span> Añadir evento
+        </button>
+      </div>
+    </div>
+    <div id="commitments-timeline-content"></div>
+  </section>
+
+  <!-- ─── LEADERSHIP: VACACIONES ─── -->
+  <section class="section" id="tab-ls-vacaciones">
+    <!-- Header -->
+    <div class="vac-header">
+      <div>
+        <div class="page-title">🏖️ Vacaciones del Equipo</div>
+        <div class="page-subtitle">Planificación, estadísticas y seguimiento de ausencias</div>
+      </div>
+      <div class="vac-header-actions">
+        <div class="vac-search-wrap">
+          <input type="text" class="vac-search" id="ls-vac-search" placeholder="🔍 Buscar persona..." oninput="renderLSVacaciones()">
+        </div>
+        <div class="ls-vac-view-toggle">
+          <button class="ls-vac-view-btn active" id="ls-vac-btn-tabla" onclick="setLSVacView('tabla')" title="Vista tabla">📊 Tabla</button>
+          <button class="ls-vac-view-btn" id="ls-vac-btn-calendario" onclick="setLSVacView('calendario')" title="Vista calendario">📅 Calendario</button>
+          <button class="ls-vac-view-btn" id="ls-vac-btn-timeline" onclick="setLSVacView('timeline')" title="Vista timeline">📏 Timeline</button>
+        </div>
+        <select class="task-select" id="ls-vac-year" onchange="renderLSVacaciones()" style="min-width:90px">
+          <option value="2025">2025</option>
+          <option value="2026" selected>2026</option>
+          <option value="2027">2027</option>
+          <option value="2028">2028</option>
+          <option value="2029">2029</option>
+          <option value="2030">2030</option>
+        </select>
+        <select class="task-select" id="ls-vac-filter-type" onchange="renderLSVacaciones()" style="min-width:120px">
+          <option value="">Todos los tipos</option>
+          <option value="V">Vacaciones</option>
+          <option value="F">Festivo</option>
+          <option value="TGD">TGD</option>
+          <option value="LEAVE">Baja</option>
+          <option value="OT">Overtime</option>
+          <option value="PARENTAL">Parental</option>
+        </select>
+        <button class="btn btn-primary" onclick="openLSVacManualModal()">+ Añadir persona</button>
+        <button class="btn btn-secondary" onclick="lsVacExportCSV()" title="Exportar CSV">📥 Exportar</button>
+      </div>
+    </div>
+    <!-- Stats Dashboard -->
+    <div id="ls-vac-stats-wrap"></div>
+    <!-- Legend -->
+    <div id="ls-vac-legend-wrap"></div>
+    <!-- Main Content -->
+    <div id="ls-vacaciones-wrap"></div>
+  </section>
+
+  <!-- ─── LEADERSHIP: FESTIVOS (v2 Redesign) ─── -->
+  <section class="section" id="tab-ls-festivos">
+    <!-- Header row: title + year selector -->
+    <div class="fest-header">
+      <div>
+        <div class="page-title">📅 Devolución de Festivos</div>
+        <div class="page-subtitle" id="fest-subtitle">Seguimiento de devolución de festivos por persona</div>
+      </div>
+      <div class="fest-header-actions">
+        <select class="task-select fest-year-select" id="fest-year-select" onchange="festChangeYear(this.value)"></select>
+        <button class="btn btn-ghost" onclick="openFestSettingsModal()" title="Configurar festivos y personas">⚙️ Configurar</button>
+      </div>
+    </div>
+
+    <!-- KPI summary cards -->
+    <div class="fest-kpi-grid" id="fest-kpi-grid"></div>
+
+    <!-- Toolbar: filters, search, actions -->
+    <div class="fest-toolbar">
+      <div class="fest-filters">
+        <button class="btn btn-ghost ls-fest-filter active" data-filter="todos" onclick="setLSFestFilter('todos',this)">Todos</button>
+        <button class="btn btn-ghost ls-fest-filter" data-filter="completado" onclick="setLSFestFilter('completado',this)">✅ Completados</button>
+        <button class="btn btn-ghost ls-fest-filter" data-filter="progreso" onclick="setLSFestFilter('progreso',this)">🔄 En progreso</button>
+        <button class="btn btn-ghost ls-fest-filter" data-filter="pendiente" onclick="setLSFestFilter('pendiente',this)">⏳ Pendientes</button>
+      </div>
+      <div class="fest-toolbar-right">
+        <div class="fest-search-wrap">
+          <input type="text" class="task-input fest-search" id="fest-search" placeholder="🔍 Buscar persona..." oninput="renderLSFestivos()">
+        </div>
+        <label class="fest-toggle-label" title="Agrupar por manager">
+          <input type="checkbox" id="fest-group-toggle" onchange="renderLSFestivos()"> 👥 Agrupar
+        </label>
+        <button class="btn btn-ghost" onclick="festExportCSV()" title="Exportar a CSV">📥 CSV</button>
+        <button class="btn btn-ghost" onclick="openFestEmailModal()" title="Enviar resumen por email">📧 Email</button>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div id="ls-festivos-wrap"></div>
+  </section>
+
+  <!-- ─── LEADERSHIP: PETICIONES ─── -->
+  <section class="section" id="tab-ls-peticiones">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+      <div>
+        <div class="page-title">📋 Peticiones &amp; Tareas <span id="ls-pet-badge" class="notif-badge" style="display:none;position:relative;top:0;background:var(--accent)">0</span></div>
+        <div class="page-subtitle">Peticiones de managers y tareas pendientes de gestión de horarios</div>
+      </div>
+      <button class="btn btn-primary" onclick="openLSPetForm()">+ Nueva Petición</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn btn-ghost ls-pet-filter active" data-filter="todos" onclick="setLSPetFilter('todos',this)">Todos</button>
+      <button class="btn btn-ghost ls-pet-filter" data-filter="pendiente" onclick="setLSPetFilter('pendiente',this)">⏳ Pendientes</button>
+      <button class="btn btn-ghost ls-pet-filter" data-filter="proceso" onclick="setLSPetFilter('proceso',this)">🔄 En Proceso</button>
+      <button class="btn btn-ghost ls-pet-filter" data-filter="completado" onclick="setLSPetFilter('completado',this)">✅ Completados</button>
+    </div>
+    <div id="ls-pet-form-wrap" style="display:none" class="add-section open">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div><div class="field-label">Título / Descripción</div><input class="task-input" id="ls-pet-titulo" placeholder="Solicitud de horario, cambio turno..." style="min-width:260px"></div>
+        <div>
+          <div class="field-label">Solicitante</div>
+          <input class="task-input" id="ls-pet-solicitante" placeholder="Nombre del manager..." style="min-width:160px" list="ls-pet-managers-list">
+          <datalist id="ls-pet-managers-list"></datalist>
+        </div>
+        <div>
+          <div class="field-label">Prioridad</div>
+          <select class="task-select" id="ls-pet-prioridad">
+            <option value="alta">🔴 Alta</option>
+            <option value="media" selected>🟡 Media</option>
+            <option value="baja">🟢 Baja</option>
+          </select>
+        </div>
+        <div><div class="field-label">Notas</div><input class="task-input" id="ls-pet-notas" placeholder="Detalles adicionales..." style="min-width:180px"></div>
+        <button class="btn btn-primary" onclick="addLSPeticion()">Guardar</button>
+        <button class="btn btn-ghost" onclick="closeLSPetForm()">Cancelar</button>
+      </div>
+    </div>
+    <div id="ls-peticiones-list"></div>
+  </section>
+
+
+</main>
+
+<!-- ── TEMPLATE MODAL ── -->
+<div class="template-overlay" id="template-overlay" onclick="closeTemplateModalOnBg(event)">
+  <div class="template-modal">
+    <div class="template-modal-header">
+      <div class="template-modal-title">📋 Selecciona una plantilla</div>
+      <button class="template-close-btn" onclick="closeTemplateModal()">×</button>
+    </div>
+    <div class="template-grid" id="template-grid"></div>
+  </div>
+</div>
+
+<!-- ── SPOTLIGHT OVERLAY ── -->
+<div id="spotlight-overlay" onclick="closeSpotlightOnBg(event)">
+  <div class="spotlight-box">
+    <div class="spotlight-input-wrap">
+      <span class="spotlight-search-icon">🔍</span>
+      <input id="spotlight-input" type="text" placeholder="Buscar tareas, eventos, reuniones, equipo..." oninput="renderSpotlightResults()" autocomplete="off">
+    </div>
+    <div class="spotlight-results" id="spotlight-results"></div>
+  </div>
+</div>
+
+<!-- ── RECURRING MEETINGS MODAL ── -->
+<div class="recurring-overlay" id="recurring-overlay" onclick="closeRecurringModalOnBg(event)">
+  <div class="recurring-modal">
+    <div class="recurring-modal-header">
+      <div class="recurring-modal-title">📅 Semana tipo</div>
+      <button class="template-close-btn" onclick="closeRecurringModal()">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Selecciona las reuniones que quieres añadir a la semana actual. Puedes editar o eliminar reuniones recurrentes.</p>
+    <div id="recurring-list"></div>
+    <div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeRecurringModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="addRecurringSelected()">Añadir seleccionadas</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EVENT DETAIL/EDIT MODAL ── -->
+<div class="agenda-event-modal-overlay" id="agenda-event-modal" onclick="closeEventModal(event)">
+  <div class="agenda-event-modal">
+    <div class="agenda-event-modal-header">
+      <div class="agenda-event-modal-title">Detalle del evento</div>
+      <button class="template-close-btn" onclick="closeEventModal()" aria-label="Cerrar modal">×</button>
+    </div>
+    <div id="agenda-event-modal-body"></div>
+    <div class="agenda-event-modal-actions">
+      <button class="btn btn-ghost" onclick="duplicateEventNextWeek()" id="agenda-modal-duplicate">📋 Duplicar a siguiente semana</button>
+      <button class="btn btn-ghost" style="color:var(--danger)" onclick="deleteEventFromModal()" id="agenda-modal-delete">🗑️ Eliminar</button>
+      <button class="btn btn-primary" onclick="saveEventEdit()">💾 Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── BRIEFING MODAL ── -->
+<div class="briefing-overlay" id="briefing-overlay">
+  <div class="briefing-card">
+    <div class="briefing-greeting" id="briefing-greeting">Buenos días, Diego 👋</div>
+    <div class="briefing-date" id="briefing-date">—</div>
+    <div id="briefing-content"></div>
+    <button class="btn btn-primary briefing-start-btn" onclick="closeBriefing()">Empezar el día 🚀</button>
+  </div>
+</div>
+
+<!-- ── I1 RESUMEN SEMANAL MODAL ── -->
+<div class="template-overlay" id="summary-modal-overlay" onclick="closeSummaryModalOnBg(event)" style="z-index:1000">
+  <div class="template-modal" style="max-width:640px;width:100%">
+    <div class="template-modal-header">
+      <div class="template-modal-title">📋 Resumen Semanal</div>
+      <button class="template-close-btn" onclick="closeSummaryModal()">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px">Edita el texto antes de copiar si lo necesitas.</p>
+    <textarea id="summary-modal-text" style="width:100%;box-sizing:border-box;min-height:380px;font-size:12px;font-family:monospace;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;resize:vertical;color:var(--text-primary);line-height:1.6"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeSummaryModal()">Cerrar</button>
+      <button class="btn btn-primary" onclick="copySummaryToClipboard()">📋 Copiar al portapapeles</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOCUS MODE OVERLAY ── -->
+<div class="focus-overlay" id="focus-overlay">
+  <button class="focus-exit-btn" onclick="exitFocusMode()">✕ Salir del Focus</button>
+  <div class="focus-panel">
+    <div class="focus-title">🎯 Modo Focus</div>
+
+    <div class="focus-section">
+      <div class="focus-section-title">📅 Próxima reunión de la semana</div>
+      <div id="focus-next-meeting"></div>
+    </div>
+
+    <div class="focus-section">
+      <div class="focus-section-title">🔥 Tareas de alta prioridad</div>
+      <div id="focus-tasks-list"></div>
+    </div>
+
+    <div class="focus-section">
+      <div class="focus-section-title">⏱ Pomodoro</div>
+      <div class="pomodoro-display" id="pomodoro-display">25:00</div>
+      <div class="pomodoro-label" id="pomodoro-label">🍅 Tiempo de trabajo</div>
+      <div class="pomodoro-btns">
+        <button class="btn btn-primary" id="pomodoro-play" onclick="pomodoroPlay()">▶ Iniciar</button>
+        <button class="btn btn-ghost" id="pomodoro-pause" onclick="pomodoroPause()" style="display:none">⏸ Pausar</button>
+        <button class="btn btn-ghost" onclick="pomodoroReset()">🔄 Reiniciar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── NOTIFICATIONS PANEL ── -->
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-panel-header">🔔 Notificaciones</div>
+  <div id="notif-items"></div>
+</div>
+
+<!-- ── TB / 1:1 MODAL ── -->
+<div class="tb-modal-overlay" id="tb-modal-overlay" onclick="closeTBModal(event)">
+  <div class="tb-modal">
+    <div class="tb-modal-header">
+      <div class="tb-modal-title" id="tb-modal-title">🤝 TB / 1:1</div>
+      <button class="template-close-btn" onclick="closeTBModalBtn()">×</button>
+    </div>
+    <!-- I2 — Sugerencias de tema de 1:1 -->
+    <div id="tb-modal-suggestions"></div>
+    <div id="tb-modal-sessions"></div>
+    <button class="btn btn-primary" style="margin-top:14px;font-size:13px;width:100%" onclick="openTBForm()">➕ Nueva sesión TB</button>
+    <div class="add-section" id="tb-modal-form">
+      <div>
+        <div class="field-label">Fecha</div>
+        <input class="task-input" id="tb-modal-date" type="date" style="width:100%;box-sizing:border-box">
+      </div>
+      <div style="margin-top:10px">
+        <div class="field-label">Puntos tratados</div>
+        <textarea class="task-input" id="tb-modal-points" rows="4" style="width:100%;resize:vertical;box-sizing:border-box" placeholder="¿Qué se habló?"></textarea>
+      </div>
+      <div style="margin-top:10px">
+        <div class="field-label">Acuerdos / Compromisos</div>
+        <textarea class="task-input" id="tb-modal-agreements" rows="3" style="width:100%;resize:vertical;box-sizing:border-box" placeholder="Acuerdos alcanzados..."></textarea>
+      </div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input type="checkbox" id="tb-modal-followup" style="accent-color:var(--accent);flex-shrink:0">
+        <label for="tb-modal-followup" style="font-size:13px;white-space:nowrap">Seguimiento pendiente</label>
+        <input class="task-input" id="tb-modal-followup-desc" placeholder="Descripción..." style="flex:1;min-width:120px;box-sizing:border-box">
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" style="font-size:13px" onclick="saveTBModalSession()">Guardar sesión</button>
+        <button class="btn btn-ghost" style="font-size:13px" onclick="closeTBForm()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PDI MODAL ══════════════ -->
+<div class="tb-modal-overlay" id="pdi-modal-overlay" onclick="if(event.target===this)closePDIModal()">
+  <div class="tb-modal" style="max-width:560px">
+    <div class="tb-modal-header">
+      <div class="tb-modal-title" id="pdi-modal-name">PDI — Nombre</div>
+      <button class="btn btn-ghost" style="font-size:13px" onclick="closePDIModal()">✕ Cerrar</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <div class="field-label">💪 Fortalezas clave</div>
+        <textarea class="notes-area" id="pdi-strengths" placeholder="¿En qué destaca esta persona?" style="min-height:80px;font-size:13px" oninput="savePDI()"></textarea>
+      </div>
+      <div>
+        <div class="field-label">🌱 Áreas de desarrollo</div>
+        <textarea class="notes-area" id="pdi-dev-areas" placeholder="¿En qué necesita crecer?" style="min-height:80px;font-size:13px" oninput="savePDI()"></textarea>
+      </div>
+      <div>
+        <div class="field-label">🎯 Objetivo de esta semana</div>
+        <input class="task-input" id="pdi-week-goal" placeholder="Un objetivo concreto y observable..." style="width:100%" oninput="savePDI()">
+      </div>
+      <div>
+        <div class="field-label">🚀 Próximo rol / aspiración</div>
+        <input class="task-input" id="pdi-next-role" placeholder="Ej: Expert → Manager en Q3..." style="width:100%" oninput="savePDI()">
+      </div>
+      <div>
+        <div class="field-label">🔒 Notas de coaching privadas</div>
+        <textarea class="notes-area" id="pdi-coaching-notes" placeholder="Solo visible para ti. Contexto, patrones, insights..." style="min-height:100px;font-size:13px" oninput="savePDI()"></textarea>
+      </div>
+      <div style="font-size:11px;color:var(--text-secondary)" id="pdi-updated-at"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PR3 Feature 3: LAUNCH MODAL ── -->
+<div class="tb-modal-overlay" id="launch-modal-overlay" onclick="if(event.target===this)closeLaunchModal()">
+  <div class="tb-modal" style="max-width:640px">
+    <div class="tb-modal-header">
+      <div class="tb-modal-title">🚀 Modo Lanzamiento</div>
+      <button class="template-close-btn" onclick="closeLaunchModal()">×</button>
+    </div>
+
+    <!-- Toggle habilitado -->
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:16px">
+      <input type="checkbox" id="launch-enabled" style="width:18px;height:18px;accent-color:var(--accent)">
+      <label for="launch-enabled" style="font-size:14px;font-weight:600;cursor:pointer">Activar Modo Lanzamiento</label>
+    </div>
+
+    <!-- Título y Fecha/Hora -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+      <div style="flex:2;min-width:180px">
+        <div class="field-label">Nombre del lanzamiento</div>
+        <input class="task-input" id="launch-title" placeholder="Ej: iPhone 17 Launch" style="width:100%" oninput="updateLaunchCountdownDisplay()">
+      </div>
+      <div>
+        <div class="field-label">Fecha y hora</div>
+        <input class="task-input" id="launch-datetime" type="datetime-local" style="min-width:auto" oninput="updateLaunchCountdownDisplay()">
+      </div>
+    </div>
+
+    <!-- Countdown -->
+    <div id="launch-countdown-wrap" style="text-align:center;margin-bottom:18px;padding:14px;background:var(--surface2);border-radius:var(--radius-sm);display:none">
+      <div style="font-size:28px;font-weight:700;color:var(--accent)" id="launch-countdown">--:--:--</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">para el lanzamiento</div>
+    </div>
+
+    <!-- Checklist pre-lanzamiento -->
+    <div style="margin-bottom:18px">
+      <div class="field-label" style="margin-bottom:8px">✅ Checklist pre-lanzamiento</div>
+      <div id="launch-checklist"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input class="task-input" id="launch-check-new" placeholder="Nuevo ítem del checklist..." style="flex:1" onkeydown="if(event.key==='Enter')addLaunchChecklist()">
+        <button class="btn btn-ghost" style="font-size:12px" onclick="addLaunchChecklist()">+ Añadir</button>
+      </div>
+    </div>
+
+    <!-- KPIs del día -->
+    <div style="margin-bottom:18px">
+      <div class="field-label" style="margin-bottom:8px">📊 KPIs del día</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Unidades vendidas</div>
+          <input class="task-input" id="launch-kpi-units" type="number" min="0" placeholder="0" style="width:110px">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">NPS del día</div>
+          <input class="task-input" id="launch-kpi-nps" type="number" min="0" max="100" placeholder="0" style="width:110px">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Incidencias</div>
+          <input class="task-input" id="launch-kpi-incidents" type="number" min="0" placeholder="0" style="width:110px">
+        </div>
+      </div>
+    </div>
+
+    <!-- Post-launch review -->
+    <div style="margin-bottom:18px">
+      <div class="field-label" style="margin-bottom:8px">📝 Post-launch review</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">✅ ¿Qué fue bien?</div>
+          <textarea class="notes-area" id="launch-review-well" placeholder="Aspectos positivos del lanzamiento..." rows="2" style="width:100%;font-size:13px"></textarea>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">🔧 ¿Qué mejorar?</div>
+          <textarea class="notes-area" id="launch-review-improve" placeholder="Puntos de mejora para el próximo lanzamiento..." rows="2" style="width:100%;font-size:13px"></textarea>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">📌 Notas adicionales</div>
+          <textarea class="notes-area" id="launch-review-notes" placeholder="Cualquier dato relevante..." rows="2" style="width:100%;font-size:13px"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;padding-top:14px;border-top:1px solid var(--border)">
+      <button class="btn btn-primary" onclick="saveLaunch()">💾 Guardar lanzamiento</button>
+      <button class="btn btn-ghost" onclick="closeLaunchModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── F2 PREPARACIÓN DE REUNIÓN MODAL ── -->
+<div class="tb-modal-overlay" id="prep-reunion-overlay" onclick="if(event.target===this)closePrepReunionModal()">
+  <div class="tb-modal" style="max-width:680px;width:100%">
+    <div class="tb-modal-header">
+      <div class="tb-modal-title" id="prep-reunion-title">📋 Preparación de reunión</div>
+      <button class="template-close-btn" onclick="closePrepReunionModal()">×</button>
+    </div>
+    <div id="prep-reunion-content" style="max-height:70vh;overflow-y:auto;padding:4px 0"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost" style="font-size:13px" onclick="window.print()">🖨️ Imprimir / Exportar</button>
+      <button class="btn btn-ghost" onclick="closePrepReunionModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── COMMITMENTS INFO MODAL ── -->
+<div class="tb-modal-overlay" id="commitments-info-modal-overlay" onclick="if(event.target===this)closeCommitmentsInfoModal()" style="display:none">
+  <div class="tb-modal" style="max-width:680px;max-height:85vh;overflow-y:auto">
+    <div class="tb-modal-header">
+      <div class="tb-modal-title">📖 Plan de Negocio Q3 FY26</div>
+      <button class="template-close-btn" onclick="closeCommitmentsInfoModal()">×</button>
+    </div>
+    <div id="commitments-info-modal-body" style="padding:0 0 8px"></div>
+  </div>
+</div>
+
+<!-- ── TIMELINE ADD/EDIT EVENT MODAL ── -->
+<div class="tl-modal-overlay" id="tl-modal-overlay" onclick="if(event.target===this)closeTLModal()">
+  <div class="tl-modal">
+    <div class="tl-modal-header">
+      <div class="tl-modal-title" id="tl-modal-title">➕ Añadir evento</div>
+      <button class="tl-modal-close" onclick="closeTLModal()">×</button>
+    </div>
+    <input type="hidden" id="tl-modal-edit-id">
+    <div class="tl-field">
+      <label>Categoría</label>
+      <select id="tl-modal-category"></select>
+    </div>
+    <div class="tl-field-row">
+      <div class="tl-field">
+        <label>Semana inicio</label>
+        <select id="tl-modal-week"></select>
+      </div>
+      <div class="tl-field">
+        <label>Duración (semanas)</label>
+        <select id="tl-modal-span">
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+          <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+          <option value="13">13</option>
+        </select>
+      </div>
+    </div>
+    <div class="tl-field">
+      <label>Texto del evento</label>
+      <textarea id="tl-modal-text" placeholder="Descripción del evento…"></textarea>
+    </div>
+    <div class="tl-check-row">
+      <label><input type="checkbox" id="tl-modal-isnew"> Marcar como NEW</label>
+      <label><input type="checkbox" id="tl-modal-istbc"> Marcar como TBC</label>
+    </div>
+    <div class="tl-field">
+      <label>Color</label>
+      <div class="tl-color-palette" id="tl-color-palette">
+        <div class="tl-color-swatch selected" data-color="#4a9d6f" style="background:#4a9d6f" onclick="selectTLColor('#4a9d6f',this)"></div>
+        <div class="tl-color-swatch" data-color="#3a8a5f" style="background:#3a8a5f" onclick="selectTLColor('#3a8a5f',this)"></div>
+        <div class="tl-color-swatch" data-color="#2d7a52" style="background:#2d7a52" onclick="selectTLColor('#2d7a52',this)"></div>
+        <div class="tl-color-swatch" data-color="#226644" style="background:#226644" onclick="selectTLColor('#226644',this)"></div>
+        <div class="tl-color-swatch" data-color="#5b8dd9" style="background:#5b8dd9" onclick="selectTLColor('#5b8dd9',this)"></div>
+        <div class="tl-color-swatch" data-color="#e67e22" style="background:#e67e22" onclick="selectTLColor('#e67e22',this)"></div>
+        <div class="tl-color-swatch" data-color="#9b59b6" style="background:#9b59b6" onclick="selectTLColor('#9b59b6',this)"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
+      <button class="btn-secondary" onclick="closeTLModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveTLEvent()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════ MODAL: IMPORTAR PDF MEDALLIA ══════════════ -->
+<div class="tb-modal-overlay" id="medallia-import-modal" onclick="if(event.target===this)closeMedalliaModal()" style="display:none">
+  <div class="tb-modal" style="max-width:560px">
+    <div class="tb-modal-header">
+      <div class="tb-modal-title">📄 Importar PDF NPS / Medallia</div>
+      <button class="btn-icon" onclick="closeMedalliaModal()" title="Cerrar">×</button>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="field-label">Tipo de informe</div>
+      <select class="task-select" id="medallia-pdf-type" style="width:100%" onchange="toggleMedalliaManualEntry()">
+        <option value="nps-product">🛍️ NPS Shopping / Product Zone</option>
+        <option value="nps-support">🎧 NPS Support</option>
+        <option value="nps-apu">🔧 NPS APU / Genius Bar</option>
+        <option value="nps-taa">🎓 NPS T@A (Today at Apple)</option>
+        <option value="feedback">💬 Feedback libre de clientes (comentarios)</option>
+      </select>
+    </div>
+    <div class="voc-upload-zone" id="medallia-drop-zone" onclick="document.getElementById('medallia-pdf-file').click()">
+      <div style="font-size:32px;margin-bottom:8px">📎</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">Arrastra un PDF aquí o haz clic para seleccionar</div>
+      <div style="font-size:12px;color:var(--text-secondary)" id="medallia-file-name">Ningún archivo seleccionado</div>
+      <input type="file" accept=".pdf" id="medallia-pdf-file" style="display:none" onchange="updateMedalliaFileName()">
+    </div>
+    <!-- Manual entry fallback -->
+    <details id="medallia-manual-entry" style="margin:12px 0">
+      <summary style="font-size:12px;color:var(--accent);cursor:pointer;font-weight:600">✏️ ¿El PDF no funciona? Introduce el NPS manualmente</summary>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm)">
+        <div style="flex:1;min-width:100px">
+          <div class="field-label" style="font-size:11px">NPS Score</div>
+          <input class="task-input" id="medallia-manual-nps" type="number" placeholder="ej: 72" style="width:100%;box-sizing:border-box">
+        </div>
+        <div style="flex:1;min-width:80px">
+          <div class="field-label" style="font-size:11px">Promotores %</div>
+          <input class="task-input" id="medallia-manual-promoters" type="number" placeholder="%" style="width:100%;box-sizing:border-box">
+        </div>
+        <div style="flex:1;min-width:80px">
+          <div class="field-label" style="font-size:11px">Pasivos %</div>
+          <input class="task-input" id="medallia-manual-passives" type="number" placeholder="%" style="width:100%;box-sizing:border-box">
+        </div>
+        <div style="flex:1;min-width:80px">
+          <div class="field-label" style="font-size:11px">Detractores %</div>
+          <input class="task-input" id="medallia-manual-detractors" type="number" placeholder="%" style="width:100%;box-sizing:border-box">
+        </div>
+        <button class="btn btn-primary" style="font-size:13px;align-self:flex-end" onclick="processManualNPS()">💾 Guardar</button>
+      </div>
+    </details>
+    <div id="medallia-import-status" style="margin-bottom:12px;font-size:13px;color:var(--text-secondary)"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeMedalliaModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="processMedalliaPDF()">🚀 Procesar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: AÑADIR FESTIVO (v2) ══════════════ -->
+<div class="tb-modal-overlay" id="ls-fest-modal-overlay" onclick="if(event.target===this)closeLSFestivoModal()" style="display:none">
+  <div class="tb-modal" style="max-width:480px">
+    <div class="tb-modal-header">
+      <div class="tb-modal-title">📅 Registrar devolución de festivo</div>
+      <button class="btn-icon" onclick="closeLSFestivoModal()" title="Cerrar">×</button>
+    </div>
+    <div style="margin-bottom:8px;font-size:13px;color:var(--text-secondary)">Persona: <strong id="ls-fest-modal-nombre"></strong></div>
+    <input type="hidden" id="ls-fest-modal-key">
+    <input type="hidden" id="ls-fest-modal-edit-idx" value="-1">
+    <div style="margin-bottom:14px">
+      <div class="field-label">Festivo devuelto</div>
+      <select class="task-select" id="ls-fest-modal-select" style="width:100%" onchange="lsFestModalSelectChange(this)"></select>
+      <input class="task-input" id="ls-fest-modal-custom" placeholder="Nombre del festivo..." style="width:100%;box-sizing:border-box;margin-top:6px;display:none">
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="field-label">Fecha de devolución</div>
+      <input type="date" class="task-input" id="ls-fest-modal-fecha" style="width:100%;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:20px">
+      <div class="field-label">Notas <span style="color:var(--text-secondary);font-weight:400">(opcional)</span></div>
+      <input class="task-input" id="ls-fest-modal-notas" placeholder="Observaciones..." style="width:100%;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeLSFestivoModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveLSFestivo()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: CONFIGURAR FESTIVOS ══════════════ -->
+<div class="tb-modal-overlay" id="fest-settings-overlay" onclick="if(event.target===this)closeFestSettingsModal()" style="display:none">
+  <div class="tb-modal" style="max-width:680px;width:95%">
+    <div class="tb-modal-header">
+      <div class="tb-modal-title">⚙️ Configurar Festivos — <span id="fest-settings-year"></span></div>
+      <button class="btn-icon" onclick="closeFestSettingsModal()" title="Cerrar">×</button>
+    </div>
+    <!-- Tabs inside settings modal -->
+    <div class="fest-settings-tabs">
+      <button class="btn btn-ghost fest-stab active" onclick="festSettingsTab('holidays',this)">🗓️ Catálogo de festivos</button>
+      <button class="btn btn-ghost fest-stab" onclick="festSettingsTab('people',this)">👥 Personas y totales</button>
+      <button class="btn btn-ghost fest-stab" onclick="festSettingsTab('years',this)">📆 Gestionar años</button>
+    </div>
+    <div id="fest-settings-content" style="min-height:200px;max-height:60vh;overflow-y:auto"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost" onclick="closeFestSettingsModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: EMAIL RESUMEN FESTIVOS ══════════════ -->
+<div class="tb-modal-overlay" id="fest-email-overlay" onclick="if(event.target===this)closeFestEmailModal()" style="display:none">
+  <div class="tb-modal" style="max-width:640px;width:95%">
+    <div class="tb-modal-header">
+      <div class="tb-modal-title">📧 Enviar resumen de festivos</div>
+      <button class="btn-icon" onclick="closeFestEmailModal()" title="Cerrar">×</button>
+    </div>
+    <div style="margin-bottom:12px;font-size:13px;color:var(--text-secondary)">Selecciona a quién enviar el resumen de devolución de festivos. Se generará un email con el estado actual.</div>
+    <div id="fest-email-content" style="max-height:50vh;overflow-y:auto"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost" onclick="closeFestEmailModal()">Cerrar</button>
+      <button class="btn btn-primary" onclick="festSendAllEmails()">📧 Enviar a todos los seleccionados</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Preparación 1:1 ── -->
+<div class="tb-modal-overlay" id="oneone-prep-overlay" onclick="if(event.target===this)close1on1PrepModal()" style="display:none">
+  <div class="tb-modal" style="max-width:640px;width:95%">
+    <div class="tb-modal-header">
+      <div class="tb-modal-title" id="oneone-prep-title">📋 Preparación 1:1</div>
+      <button class="template-close-btn" onclick="close1on1PrepModal()">×</button>
+    </div>
+    <div id="oneone-prep-content" style="max-height:70vh;overflow-y:auto;padding:4px 0"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn btn-ghost" style="font-size:12px" onclick="print1on1Prep()">🖨️ Imprimir / Exportar</button>
+      <button class="btn btn-ghost" style="font-size:12px;margin-left:auto" onclick="close1on1PrepModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+<!-- Print area for 1:1 prep -->
+<div id="oneone-prep-print"></div>
+
+<script src="config.js" onerror="window._configMissing = true"></script>
+<script src="commitments-data.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
