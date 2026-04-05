@@ -666,6 +666,36 @@
       </div>
     </div>
 
+    <!-- ══════════════ KPI TREND CHARTS (Chart.js) ══════════════ -->
+    <div class="card section-gap" id="kpi-trend-charts-card">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+        <h3>📈 Tendencias de KPIs</h3>
+        <div class="kpi-trend-view-pills" id="kpi-trend-view-pills">
+          <button class="kpi-trend-pill active" data-view="4w" onclick="setTrendView('4w', this)">4 semanas</button>
+          <button class="kpi-trend-pill" data-view="quarter" onclick="setTrendView('quarter', this)">Quarter</button>
+          <button class="kpi-trend-pill" data-view="all" onclick="setTrendView('all', this)">Todo</button>
+        </div>
+      </div>
+      <div id="kpi-trend-metrics-selector" class="kpi-trend-metrics"></div>
+      <div id="kpi-trend-chart-container" style="position:relative;height:300px;margin:12px 0">
+        <canvas id="kpi-trend-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="card section-gap" id="kpi-comparison-card">
+      <h3>📊 Comparativa semanal (Chart.js)</h3>
+      <div id="kpi-comparison-chart-container" style="position:relative;height:250px;margin:12px 0">
+        <canvas id="kpi-comparison-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="card section-gap" id="kpi-quarter-progress-card">
+      <h3>🎯 Progreso del Quarter</h3>
+      <div id="kpi-quarter-progress-container" style="position:relative;height:200px;margin:12px 0">
+        <canvas id="kpi-quarter-canvas"></canvas>
+      </div>
+    </div>
+
     <!-- Comparativa semanal — debajo del Histórico -->
     <div class="card section-gap" id="comparativa-section">
       <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleComparativa()">
@@ -2602,5 +2632,14 @@
 <script src="config.js" onerror="window._configMissing = true"></script>
 <script src="commitments-data.js"></script>
 <script src="dashboard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" crossorigin="anonymous" onerror="console.warn('Chart.js no pudo cargarse. Los gráficos Chart.js no estarán disponibles.')"></script>
+<script type="module">
+  import { initKPICharts } from './js/modules/kpi-charts.js';
+  if (window.Chart) {
+    initKPICharts();
+  } else {
+    window.addEventListener('load', () => initKPICharts());
+  }
+</script>
 </body>
 </html>
