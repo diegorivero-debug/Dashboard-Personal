@@ -468,7 +468,7 @@
 </script>
 <script type="module">
   import { K } from './js/core/constants.js';
-  import { load } from './js/core/utils.js';
+  import { load, esc } from './js/core/utils.js';
 
   function renderHomeWidgets() {
     const grid = document.getElementById('hw-grid');
@@ -492,6 +492,7 @@
     }
 
     function pct(val, obj) {
+      // Cap at 150% to handle overperformance without distorting the bar
       return obj > 0 ? Math.min(Math.round((val / obj) * 100), 150) : 0;
     }
 
@@ -539,16 +540,17 @@
           'dashboard.html?seccion=negocio'));
       } else {
         const ventasPct = pct(parseNum(kpis.ventas), parseNum(kpis.objVentas));
-        const npsPct    = Math.min(Math.round(parseNum(kpis.nps)), 100);
+        // NPS is a 0-100 score, not a % of objective — show it as-is on the bar
+        const npsScore  = Math.min(Math.round(parseNum(kpis.nps)), 100);
         const convPct   = pct(parseNum(kpis.conv),   parseNum(kpis.objConv));
         const rows = [
-          { label: '💰 Ventas',     p: ventasPct },
-          { label: '⭐ NPS',        p: npsPct,  raw: true },
-          { label: '🔄 Conversión', p: convPct },
+          { label: '💰 Ventas',     p: ventasPct, suffix: '%' },
+          { label: '⭐ NPS',        p: npsScore,  suffix: '' },
+          { label: '🔄 Conversión', p: convPct,   suffix: '%' },
         ].map(r => `<div class="hw-kpi-row">
           <span class="hw-kpi-label">${r.label}</span>
           ${progressBar(r.p)}
-          <span class="hw-kpi-val">${r.p}${r.raw ? '' : '%'}</span>
+          <span class="hw-kpi-val">${r.p}${r.suffix}</span>
         </div>`).join('');
         widgets.push(widget('kpis', '📊', 'KPIs — resumen', rows, 'dashboard.html?seccion=negocio'));
       }
@@ -569,7 +571,7 @@
           'dashboard.html?seccion=operativa'));
       } else {
         const rows = todayEvents.map(ev =>
-          `<div class="hw-event-row"><span class="hw-event-time">${ev.time || '—'}</span><span class="hw-event-title">${ev.title || ev.name || '—'}</span></div>`
+          `<div class="hw-event-row"><span class="hw-event-time">${esc(ev.time || '—')}</span><span class="hw-event-title">${esc(ev.title || ev.name || '—')}</span></div>`
         ).join('');
         widgets.push(widget('events', '📅', 'Reuniones de hoy', rows, 'dashboard.html?seccion=operativa'));
       }
@@ -611,7 +613,7 @@
         const badge = last.type === 'positivo' ? '🌟 Positivo' : '🌱 Desarrollo';
         const rel   = dAgo === 0 ? 'hoy' : dAgo === 1 ? 'hace 1 día' : `hace ${dAgo} días`;
         widgets.push(widget('sbi', '💬', 'Último feedback SBI',
-          `<div class="hw-sbi-row"><span class="hw-sbi-person">${last.personName || '—'}</span><span class="hw-sbi-meta">${badge} · ${rel}</span></div>`,
+          `<div class="hw-sbi-row"><span class="hw-sbi-person">${esc(last.personName || '—')}</span><span class="hw-sbi-meta">${esc(badge)} · ${esc(rel)}</span></div>`,
           'dashboard.html?seccion=equipo'));
       }
     } catch(e) {
@@ -659,7 +661,7 @@
         const dAgo   = daysDiff(last.date);
         const rel    = dAgo === 0 ? 'hoy' : dAgo === 1 ? 'hace 1 día' : `hace ${dAgo} días`;
         widgets.push(widget('recog', '🏆', 'Último reconocimiento',
-          `<div class="hw-sbi-row"><span class="hw-sbi-person">${last.personName || last.personId || '—'}</span><span class="hw-sbi-meta">${rel}</span></div>`,
+          `<div class="hw-sbi-row"><span class="hw-sbi-person">${esc(last.personName || String(last.personId || '—'))}</span><span class="hw-sbi-meta">${esc(rel)}</span></div>`,
           'dashboard.html?seccion=equipo'));
       }
     } catch(e) {
