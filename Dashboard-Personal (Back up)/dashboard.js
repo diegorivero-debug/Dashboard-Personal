@@ -309,25 +309,36 @@ const AC_ALERT_THRESHOLD = 60; // % of AC+ goal below which an alert is shown
 /* Fallback used only when config.js is not loaded — no real personal data */
 if (typeof equipoLiderazgo === 'undefined') {
   window.equipoLiderazgo = [
-    { id: 1,  nombre: "Sheila Yubero",    rol: "Sr. Manager",  manager: "Jordi Pajares", email: "" },
-    { id: 2,  nombre: "David Carrillo",   rol: "Manager",      manager: "Diego Rivero",  email: "" },
-    { id: 3,  nombre: "Javier Quiros",    rol: "Manager",      manager: "Diego Rivero",  email: "" },
-    { id: 4,  nombre: "Javi Canfranc",    rol: "Manager",      manager: "Diego Rivero",  email: "" },
-    { id: 5,  nombre: "Cristina Carcel",  rol: "Sr. Manager",  manager: "Diego Rivero",  email: "" },
-    { id: 6,  nombre: "Javi Sanchez",     rol: "Manager",      manager: "Diego Rivero",  email: "" },
-    { id: 7,  nombre: "Ricardo Sosa",     rol: "Manager",      manager: "Diego Rivero",  email: "" },
-    { id: 8,  nombre: "Toni Medina",      rol: "Manager",      manager: "Jordi Pajares", email: "" },
-    { id: 9,  nombre: "Jorge Gil",        rol: "Sr. Manager",  manager: "Jordi Pajares", email: "" },
-    { id: 10, nombre: "Pedro Borlido",    rol: "Manager",      manager: "Jordi Pajares", email: "" },
-    { id: 11, nombre: "Meri Alvarez",     rol: "Manager",      manager: "Diego Rivero",  email: "" },
-    { id: 12, nombre: "Ana Maria Pazos",  rol: "Manager",      manager: "Diego Rivero",  email: "" },
-    { id: 13, nombre: "Itziar Cacho",     rol: "Sr. Manager",  manager: "Diego Rivero",  email: "" },
+    // ── Grupo 1: Reportan a Diego Rivero ────────────────────────────────────
+    { id: 1,  nombre: "Cristina Carcel",  rol: "Sr. Manager",  manager: "Diego Rivero",  email: "" },
+    { id: 2,  nombre: "Itziar Cacho",     rol: "Sr. Manager",  manager: "Diego Rivero",  email: "" },
+    { id: 3,  nombre: "Meri Alvarez",     rol: "Manager",      manager: "Diego Rivero",  email: "" },
+    { id: 4,  nombre: "David Carrillo",   rol: "Manager",      manager: "Diego Rivero",  email: "" },
+    { id: 5,  nombre: "Ricardo Sosa",     rol: "Manager",      manager: "Diego Rivero",  email: "" },
+    { id: 6,  nombre: "Ana Maria Pazos",  rol: "Manager",      manager: "Diego Rivero",  email: "" },
+    { id: 7,  nombre: "Javi Canfranc",    rol: "Manager",      manager: "Diego Rivero",  email: "" },
+    { id: 8,  nombre: "Javi Sanchez",     rol: "Manager",      manager: "Diego Rivero",  email: "" },
+    { id: 9,  nombre: "Javier Quiros",    rol: "Manager",      manager: "Diego Rivero",  email: "" },
+    // ── Grupo 2: Reportan a Jordi Pajares ───────────────────────────────────
+    { id: 10, nombre: "Sheila Yubero",    rol: "Sr. Manager",  manager: "Jordi Pajares", email: "" },
+    { id: 11, nombre: "Toni Medina",      rol: "Manager",      manager: "Jordi Pajares", email: "" },
+    { id: 12, nombre: "Jorge Gil",        rol: "Sr. Manager",  manager: "Jordi Pajares", email: "" },
+    { id: 13, nombre: "Pedro Borlido",    rol: "Manager",      manager: "Jordi Pajares", email: "" },
     { id: 14, nombre: "Jesus Pazos",      rol: "Manager",      manager: "Jordi Pajares", email: "" },
     { id: 15, nombre: "Deborah Ibañez",   rol: "Manager",      manager: "Jordi Pajares", email: "" },
     { id: 16, nombre: "Cristina Uson",    rol: "Manager",      manager: "Jordi Pajares", email: "" },
     { id: 17, nombre: "Julie Robin",      rol: "Manager",      manager: "Jordi Pajares", email: "" },
-    { id: 18, nombre: "Jordi Pajares",    rol: "Store Leader", manager: "Ellie Bryan",   email: "" },
-    { id: 19, nombre: "Diego Rivero",     rol: "Store Leader", manager: "Ellie Bryan",   email: "" }
+    // ── Grupo 3: Store Leaders ───────────────────────────────────────────────
+    { id: 18, nombre: "Diego Rivero",     rol: "Store Leader", manager: "",              email: "" },
+    { id: 19, nombre: "Jordi Pajares",    rol: "Store Leader", manager: "",              email: "" },
+    // ── Grupo 4: Leads — solo vacaciones/festivos ────────────────────────────
+    { id: 20, nombre: "Aurora Comesaña",  rol: "Ops Lead",     manager: "",              email: "" },
+    { id: 21, nombre: "Rubén Martínez",   rol: "Ops Lead",     manager: "",              email: "" },
+    { id: 22, nombre: "Clara Gonzalez",   rol: "Lead",         manager: "",              email: "" },
+    { id: 23, nombre: "Elisabet Moreno",  rol: "Lead",         manager: "",              email: "" },
+    { id: 24, nombre: "Eva Famoso",       rol: "Lead Genius",  manager: "",              email: "" },
+    { id: 25, nombre: "Eva Hernandez",    rol: "Lead Genius",  manager: "",              email: "" },
+    { id: 26, nombre: "Alberto Ortiz",    rol: "Lead Genius",  manager: "",              email: "" },
   ];
 }
 if (typeof RECURRING_MEETINGS === 'undefined') {
@@ -992,8 +1003,12 @@ let team = load(K.team, []);
 const saveTeam = () => { save(K.team, team); updateSummary(); };
 const COLORS = ['#0071e3','#34c759','#ff9f0a','#ff3b30','#af52de','#5ac8fa','#ff2d55','#30d158'];
 const initials = n => n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();
+// Canonical list lives in constants.js (LEAD_ROLES). Kept in sync here manually.
+const LEAD_ROLES_LOCAL = ['Ops Lead', 'Lead', 'Lead Genius'];
 if (!team.length) {
-  team = equipoLiderazgo.map((m, i) => ({
+  team = equipoLiderazgo
+    .filter(m => !LEAD_ROLES_LOCAL.includes(m.rol))
+    .map((m, i) => ({
     id: m.id,
     name: m.nombre,
     role: m.rol,

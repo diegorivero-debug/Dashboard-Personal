@@ -4,7 +4,7 @@
    and 1:1 prep modal.
 ═══════════════════════════════════════════════ */
 
-import { K, equipoLiderazgo } from '../core/constants.js';
+import { K, equipoLiderazgo, LEAD_ROLES } from '../core/constants.js';
 import { load, save, esc, showToast } from '../core/utils.js';
 
 export let team = load(K.team, []);
@@ -13,7 +13,9 @@ export const COLORS = ['#0071e3','#34c759','#ff9f0a','#ff3b30','#af52de','#5ac8f
 export const initials = n => n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();
 
 if (!team.length) {
-  team = equipoLiderazgo.map((m, i) => ({
+  team = equipoLiderazgo
+    .filter(m => !LEAD_ROLES.includes(m.rol))
+    .map((m, i) => ({
     id: m.id,
     name: m.nombre,
     role: m.rol,
