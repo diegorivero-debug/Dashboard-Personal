@@ -82,7 +82,7 @@ export function switchTab(name) {
   if (tabEl) tabEl.classList.add('active');
   const tabBtn = document.querySelector(`#nav-tabs-bar .nav-tab[data-tab="${name}"]`);
   if (tabBtn) tabBtn.classList.add('active');
-  if(name==='resumen')       { window.updateSummary?.(); window.checkAutoSuggestions?.(); window.renderTaskTrendChart?.(); window.renderFocusMetricDisplay?.(); window.renderKPIStreakAlerts?.(); window.renderMissionControl?.(); window.renderRadarChart?.(); window.populateFocusMetricCommitmentsOptions?.(); }
+  if(name==='resumen')       { window.updateSummary?.(); window.checkAutoSuggestions?.(); window.renderResumenKPIs?.(); window.renderFocusMetricDisplay?.(); window.renderKPIStreakAlerts?.(); window.renderMissionControl?.(); window.renderRadarChart?.(); window.populateFocusMetricCommitmentsOptions?.(); }
   if(name==='routine')       window.renderRoutine?.();
   if(name==='kpis')          { window.renderKPIStreakAlerts?.(); window.renderCommitmentsKPIsMirror?.(); window.renderKPIHealthSummary?.(); window.renderKPISmartInsights?.(); }
   if(name==='reuniones')     { window.renderReuniones?.(); window.updateReunionOriginSelect?.(); }
