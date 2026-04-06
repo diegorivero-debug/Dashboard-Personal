@@ -51,20 +51,24 @@
   <button class="nav-group-btn"        data-group="operativa" onclick="switchGroup('operativa')">🗂️ Operativa &amp; Gestión</button>
   <button class="nav-group-btn" data-group="leadership" onclick="switchGroup('leadership')">📆 Leadership Schedule</button>
 </nav>
-<nav class="nav-tabs" id="nav-tabs-bar">
-  <!-- tabs rendered dynamically by switchGroup() -->
-</nav>
+<div class="nav-tabs-wrapper" id="nav-tabs-wrapper">
+  <button class="nav-tabs-arrow nav-tabs-arrow-left" id="nav-tabs-arrow-left" onclick="scrollNavTabs(-1)" aria-label="Pestañas anteriores">‹</button>
+  <nav class="nav-tabs" id="nav-tabs-bar">
+    <!-- tabs rendered dynamically by switchGroup() -->
+  </nav>
+  <button class="nav-tabs-arrow nav-tabs-arrow-right" id="nav-tabs-arrow-right" onclick="scrollNavTabs(1)" aria-label="Más pestañas">›</button>
+</div>
 
 <!-- ══════════════ MAIN ══════════════ -->
 <main class="main">
 
   <!-- ─── RESUMEN ─── -->
   <section class="section active" id="tab-resumen">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:4px">
+    <div class="resumen-top-row">
       <div class="greeting" id="greeting">Buenas tardes, Diego 👋</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" style="font-size:13px" onclick="generateWeeklySummary()">📋 Generar Resumen Semanal</button>
-        <button class="btn btn-ghost" style="font-size:13px" onclick="generarInformeSemanal()">📤 Informe semanal</button>
+        <button class="btn btn-ghost" style="font-size:13px" onclick="generarInformeSemanal()">📤 Exportar Informe Semanal</button>
       </div>
     </div>
     <div class="greeting-sub">Hoy es <span id="today-date">—</span></div>
@@ -83,7 +87,7 @@
       <button class="quick-action-btn" onclick="switchGroup('equipo')" title="Mi equipo">
         <span class="quick-action-icon">👥</span><span class="quick-action-label">Equipo</span>
       </button>
-      <button class="quick-action-btn" onclick="switchGroup('agenda')" title="Agenda">
+      <button class="quick-action-btn" onclick="switchGroup('operativa','agenda')" title="Agenda">
         <span class="quick-action-icon">📋</span><span class="quick-action-label">Agenda</span>
       </button>
       <button class="quick-action-btn" onclick="switchGroup('cliente','vozcli')" title="Voz del Cliente">
@@ -104,13 +108,13 @@
     <div id="suggestion-banner" style="display:none"></div>
 
     <!-- 2. F3 — Mission Control "Esta Semana" — SEGUNDO -->
-    <div class="card" id="mission-control-card" style="margin-bottom:20px;border:2px solid var(--accent)">
+    <div class="card card-accent" id="mission-control-card" style="margin-bottom:20px">
       <div class="card-title">🎯 Esta Semana</div>
       <div id="mission-control-wrap" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px"></div>
     </div>
 
     <!-- 3. K4 Focus Metric Widget — TERCERO (con botón de eliminar) -->
-    <div class="card" style="margin-bottom:20px;border:2px solid var(--accent);background:linear-gradient(135deg,var(--surface),var(--surface2))">
+    <div class="card card-accent-gradient" style="margin-bottom:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div class="card-title" style="margin-bottom:0">🎯 Focus Metric de la Semana</div>
         <div style="display:flex;align-items:center;gap:8px">
@@ -118,7 +122,7 @@
           <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px;color:var(--danger,#e53e3e)" onclick="clearFocusMetric()" aria-label="Limpiar Focus Metric de la semana">🗑️ Limpiar</button>
         </div>
       </div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+      <div class="flex-row-wrap" style="align-items:flex-end;margin-bottom:12px">
         <div style="min-width:180px">
           <div class="field-label">Métrica de foco</div>
           <select class="task-select" id="focus-metric-select" style="width:100%">
@@ -130,19 +134,7 @@
               <option value="conv">🔄 Conversión</option>
               <option value="upt">🛍️ UPT</option>
             </optgroup>
-            <optgroup label="── Commitments Q3 FY26 ──">
-              <option value="customer-impacting">📊 Customer-Impacting Actual % to Guidance</option>
-              <option value="timely-assistance">⏱️ Timely Assistance</option>
-              <option value="dropin-conversion">🔄 Drop-In Conversion YoY %</option>
-              <option value="geniusbar-conversion">🍎 Genius Bar: Conversion %</option>
-              <option value="first-account">💳 First Account Purchase / Day</option>
-              <option value="nps-shared-feature">⭐ NPS: Shared a Feature %</option>
-              <option value="mac-instore-repair">🔧 Mac: In-Store Repair %</option>
-              <option value="delivered-dropin">📦 Delivered % (Drop-In)</option>
-              <option value="training-completion">🎓 Training Completion %</option>
-              <option value="coach-connections">🤝 Coach Connections</option>
-              <option value="pulse-action-plan">📋 Pulse Action Plan Completion %</option>
-            </optgroup>
+            <!-- Commitments optgroup populated dynamically by populateFocusMetricCommitmentsOptions() -->
           </select>
         </div>
         <div style="flex:1;min-width:200px">
@@ -160,19 +152,19 @@
 
     <!-- Quick stats -->
     <div class="grid-4" style="margin-bottom:24px">
-      <div class="card summary-stat">
+      <div class="card summary-stat clickable" onclick="switchTab('tareas')" title="Ver tareas">
         <div class="summary-num" id="sum-completadas">0</div>
         <div class="summary-label">Tareas completadas hoy</div>
       </div>
-      <div class="card summary-stat">
+      <div class="card summary-stat clickable" onclick="switchTab('tareas')" title="Ver tareas">
         <div class="summary-num" id="sum-pendientes">0</div>
         <div class="summary-label">Tareas pendientes</div>
       </div>
-      <div class="card summary-stat">
+      <div class="card summary-stat clickable" onclick="switchGroup('equipo')" title="Ver equipo">
         <div class="summary-num" id="sum-equipo">0</div>
         <div class="summary-label">Personas en el equipo</div>
       </div>
-      <div class="card summary-stat">
+      <div class="card summary-stat clickable" onclick="switchGroup('operativa','agenda')" title="Ver agenda">
         <div class="summary-num" id="sum-eventos">0</div>
         <div class="summary-label">Eventos esta semana</div>
       </div>
@@ -259,8 +251,13 @@
 
     <!-- F1 — Radar KPIs -->
     <div class="card" id="radar-card" style="margin-bottom:16px">
-      <div class="card-title">📡 Radar KPIs</div>
-      <div id="radar-chart-wrap"></div>
+      <div class="radar-toggle-header" onclick="toggleRadarChart()" role="button" aria-expanded="true" aria-controls="radar-body">
+        <div class="card-title" style="margin-bottom:0">📡 Radar KPIs</div>
+        <span class="radar-toggle-icon" id="radar-toggle-icon">▼</span>
+      </div>
+      <div id="radar-body">
+        <div id="radar-chart-wrap"></div>
+      </div>
     </div>
 
   </section>

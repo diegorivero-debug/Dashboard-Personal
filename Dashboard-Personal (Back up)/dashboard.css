@@ -125,15 +125,73 @@
     }
     .header-icon-btn:hover { background: var(--surface2); color: var(--text-primary); border-color: var(--border); }
 
+    /* ── NAV TABS WRAPPER (scroll indicators) ── */
+    .nav-tabs-wrapper {
+      position: relative;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: stretch;
+    }
+    /* Gradient fade – right edge (always visible until scrolled to end) */
+    .nav-tabs-wrapper::after {
+      content: '';
+      position: absolute;
+      right: 36px; /* leave room for the right arrow */
+      top: 0;
+      bottom: 0;
+      width: 48px;
+      background: linear-gradient(to right, transparent, var(--surface));
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 2;
+    }
+    .nav-tabs-wrapper.tabs-at-end::after { opacity: 0; }
+    /* Gradient fade – left edge (hidden until scrolled right) */
+    .nav-tabs-wrapper::before {
+      content: '';
+      position: absolute;
+      left: 36px; /* leave room for the left arrow */
+      top: 0;
+      bottom: 0;
+      width: 48px;
+      background: linear-gradient(to left, transparent, var(--surface));
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 2;
+      opacity: 0;
+    }
+    .nav-tabs-wrapper.tabs-scrolled::before { opacity: 1; }
+    /* Arrow scroll buttons */
+    .nav-tabs-arrow {
+      flex-shrink: 0;
+      width: 36px;
+      background: var(--surface);
+      border: none;
+      border-bottom: 1px solid transparent; /* align with tab bar */
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 18px;
+      display: none; /* hidden until overflow detected */
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s, background 0.2s;
+      z-index: 3;
+      padding: 0;
+    }
+    .nav-tabs-arrow.visible { display: flex; }
+    .nav-tabs-arrow:hover { color: var(--accent); background: var(--surface2); }
+
     /* ── NAV TABS ── */
     .nav-tabs {
       background: var(--surface);
-      border-bottom: 1px solid var(--border);
       padding: 0 32px;
       display: flex;
+      flex: 1;
       gap: 2px;
       overflow-x: auto;
       scrollbar-width: none;
+      min-width: 0;
     }
     .nav-tabs::-webkit-scrollbar { display: none; }
     .nav-tab {
@@ -477,7 +535,7 @@
     @media (max-width: 640px) {
       .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
       .main { padding: 16px; }
-      .header, .nav-tabs { padding: 0 16px; }
+      .header, .nav-tabs { padding: 0 8px; }
     }
 
 /* ── REUNIONES ── */
@@ -619,7 +677,7 @@
 }
 .acta-list-item:hover { box-shadow: var(--shadow); }
 @media print {
-  .header, .nav-tabs, .btn, .btn-primary, .btn-ghost, #print-back-btn { display: none !important; }
+  .header, .nav-tabs, .nav-tabs-wrapper, .btn, .btn-primary, .btn-ghost, #print-back-btn { display: none !important; }
   .section { display: none !important; }
   #tab-actas { display: block !important; }
   .acta-view { display: block !important; }
@@ -4552,7 +4610,7 @@ button.index-card {
   body.printing-report #tab-weekly-report,
   body.printing-report #tab-weekly-report * { visibility: visible !important; }
   body.printing-report #tab-weekly-report { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
-  body.printing-report .header, body.printing-report .nav-groups, body.printing-report .nav-tabs,
+  body.printing-report .header, body.printing-report .nav-groups, body.printing-report .nav-tabs, body.printing-report .nav-tabs-wrapper,
   body.printing-report #notif-panel, body.printing-report #snapshot-banner { display: none !important; }
   body.printing-report .wr-report { box-shadow: none; border: none; }
   body.printing-report .btn, body.printing-report .wr-notes-area { display: none !important; }
@@ -4697,3 +4755,61 @@ button.index-card {
     display: none;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   RESUMEN — UTILITY CLASSES
+   (replaces repeated inline styles in tab-resumen)
+═══════════════════════════════════════════════ */
+
+/* Card with accent-coloured border */
+.card-accent {
+  border: 2px solid var(--accent) !important;
+}
+
+/* Card with accent border + subtle gradient background */
+.card-accent-gradient {
+  border: 2px solid var(--accent) !important;
+  background: linear-gradient(135deg, var(--surface), var(--surface2)) !important;
+}
+
+/* Flex row that wraps, used for aligned header rows */
+.flex-row-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Top row of a section: title on the left, actions on the right */
+.resumen-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+/* Quick Stats cards — clickable variant */
+.summary-stat.clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.summary-stat.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Radar chart collapsible */
+.radar-toggle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+.radar-toggle-icon {
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: transform 0.2s;
+}
+.radar-toggle-icon.collapsed { transform: rotate(-90deg); }
