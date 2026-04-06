@@ -66,34 +66,9 @@
   <section class="section active" id="tab-resumen">
     <div class="resumen-top-row">
       <div class="greeting" id="greeting">Buenas tardes, Diego 👋</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary" style="font-size:13px" onclick="generateWeeklySummary()">📋 Generar Resumen Semanal</button>
-        <button class="btn btn-ghost" style="font-size:13px" onclick="generarInformeSemanal()">📤 Exportar Informe Semanal</button>
-      </div>
+      <a class="weekly-report-link" onclick="switchTab('weekly-report')" href="javascript:void(0)">Ver Weekly Report →</a>
     </div>
     <div class="greeting-sub">Hoy es <span id="today-date">—</span></div>
-
-    <!-- Quick Actions Bar — fast navigation to common tasks -->
-    <div class="quick-actions-bar" style="margin-top:10px;margin-bottom:12px">
-      <button class="quick-action-btn" onclick="switchTab('kpis')" title="Ir a KPIs">
-        <span class="quick-action-icon">📈</span><span class="quick-action-label">KPIs</span>
-      </button>
-      <button class="quick-action-btn" onclick="switchTab('routine')" title="Preparar semana">
-        <span class="quick-action-icon">📅</span><span class="quick-action-label">Semana</span>
-      </button>
-      <button class="quick-action-btn" onclick="switchTab('commitments')" title="Commitments Q">
-        <span class="quick-action-icon">🎯</span><span class="quick-action-label">Commitments</span>
-      </button>
-      <button class="quick-action-btn" onclick="switchGroup('equipo')" title="Mi equipo">
-        <span class="quick-action-icon">👥</span><span class="quick-action-label">Equipo</span>
-      </button>
-      <button class="quick-action-btn" onclick="switchGroup('operativa','agenda')" title="Agenda">
-        <span class="quick-action-icon">📋</span><span class="quick-action-label">Agenda</span>
-      </button>
-      <button class="quick-action-btn" onclick="switchGroup('cliente','vozcli')" title="Voz del Cliente">
-        <span class="quick-action-icon">🗣️</span><span class="quick-action-label">Clientes</span>
-      </button>
-    </div>
 
     <!-- Weekly Health Score — business health at a glance -->
     <div id="weekly-health-score" class="card health-score-card" style="margin-top:12px;margin-bottom:16px"></div>
@@ -182,43 +157,15 @@
       <div class="snapshot-kpis" id="snapshot-kpis-content"></div>
     </div>
 
-    <!-- ── BLOQUE: COMERCIAL ── -->
-    <div class="theme-block-header">💰 Comercial</div>
-
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title">💰 Ventas de la Semana</div>
-      <div class="kpi-value" id="res-ventas" style="color:var(--success)">—</div>
-      <div class="kpi-label">Objetivo: <span id="res-ventas-obj">—</span></div>
-      <div class="progress-wrap">
-        <div class="progress-label"><span>% conseguido</span><span id="res-ventas-pct">—</span></div>
-        <div class="progress-bar"><div class="progress-fill green" id="res-ventas-bar" style="width:0%"></div></div>
+    <!-- ── BLOQUE: MIS KPIs ── -->
+    <div class="card resumen-kpis-block" style="margin-bottom:16px" id="resumen-kpis-card">
+      <div class="resumen-kpis-header">
+        <div class="card-title" style="margin-bottom:0">📊 Mis KPIs</div>
+        <button class="resumen-kpis-gear" onclick="toggleResumenKPISelector()" title="Configurar KPIs">⚙️</button>
       </div>
+      <div id="resumen-kpi-selector" class="resumen-kpi-selector" style="display:none"></div>
+      <div class="resumen-kpis-grid" id="resumen-kpis-wrap"></div>
     </div>
-
-    <!-- ── BLOQUE: CLIENTES ── -->
-    <div class="theme-block-header">🌟 Clientes</div>
-
-    <div class="nps-compact-grid" style="margin-bottom:16px" id="res-nps-grid">
-      <div class="card nps-compact-card">
-        <div class="nps-compact-title">🛍️ Shopping</div>
-        <div class="nps-compact-value" id="res-nps-shopping">—</div>
-      </div>
-      <div class="card nps-compact-card">
-        <div class="nps-compact-title">🎧 Support</div>
-        <div class="nps-compact-value" id="res-nps-support">—</div>
-      </div>
-      <div class="card nps-compact-card">
-        <div class="nps-compact-title">🔧 APU</div>
-        <div class="nps-compact-value" id="res-nps-apu">—</div>
-      </div>
-      <div class="card nps-compact-card">
-        <div class="nps-compact-title">🎓 T@A</div>
-        <div class="nps-compact-value" id="res-nps-taa">—</div>
-      </div>
-    </div>
-
-    <!-- ── BLOQUE: PRODUCTIVIDAD PERSONAL ── -->
-    <div class="theme-block-header">🧠 Productividad Personal</div>
 
     <div class="grid-2-3" style="margin-bottom:16px">
       <div class="card">
@@ -237,16 +184,6 @@
           <p>No hay eventos en las próximas 2 semanas.</p>
         </div>
       </div>
-    </div>
-
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title">📉 Tendencia de tareas</div>
-      <div class="trend-chart-legend">
-        <span><span class="trend-legend-dot" style="background:var(--accent)"></span>Creadas</span>
-        <span><span class="trend-legend-dot" style="background:var(--success)"></span>Completadas</span>
-      </div>
-      <div class="trend-chart-wrap" id="trend-chart-wrap"></div>
-      <div id="trend-stats" style="margin-top:10px;font-size:13px;color:var(--text-secondary)"></div>
     </div>
 
     <!-- F1 — Radar KPIs -->

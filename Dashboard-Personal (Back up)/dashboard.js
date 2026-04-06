@@ -291,7 +291,7 @@ function switchTab(name) {
   if (tabEl) tabEl.classList.add('active');
   const tabBtn = document.querySelector(`#nav-tabs-bar .nav-tab[data-tab="${name}"]`);
   if (tabBtn) tabBtn.classList.add('active');
-  if(name==='resumen')       { updateSummary(); checkAutoSuggestions(); renderTaskTrendChart(); renderFocusMetricDisplay(); renderKPIStreakAlerts(); renderMissionControl(); renderRadarChart(); populateFocusMetricCommitmentsOptions?.(); }
+  if(name==='resumen')       { updateSummary(); checkAutoSuggestions(); renderResumenKPIs(); renderFocusMetricDisplay(); renderKPIStreakAlerts(); renderMissionControl(); renderRadarChart(); populateFocusMetricCommitmentsOptions?.(); }
   if(name==='routine')       renderRoutine();
   if(name==='kpis')          { renderKPIStreakAlerts(); renderCommitmentsKPIsMirror(); }
   if(name==='reuniones')     { renderReuniones(); updateReunionOriginSelect(); }
@@ -473,6 +473,7 @@ function saveKPIs() {
     updateSummary();
     renderRadarChart();
     renderMissionControl();
+    renderResumenKPIs();
   }, 400);
 }
 function loadKPIs() {
@@ -609,17 +610,6 @@ function refreshProgressBars() {
   if(mdo) mdo.textContent = dtaO || '—';
   // ── YoY/WoW badges ──
   updateYoWBadges();
-  // ── Resumen tab mirrors ──
-  const venPct = setBar('res-ventas-bar','res-ventas-pct', venV, venO);
-  const rv=document.getElementById('res-ventas');    if(rv) rv.textContent=venV||'—';
-  const ro=document.getElementById('res-ventas-obj');if(ro) ro.textContent=venO||'—';
-  // ── Resumen NPS compact cards ──
-  const _npsColor = v => { const n=parseFloat(v); return isNaN(n)?'var(--text-secondary)':n>=50?'var(--success)':n>=0?'var(--warning)':'var(--danger)'; };
-  [['kpi-nps-shopping','res-nps-shopping'],['kpi-nps-support','res-nps-support'],
-   ['kpi-nps-apu','res-nps-apu'],['kpi-nps-taa','res-nps-taa']].forEach(([src,dst])=>{
-    const val=_g(src); const el=document.getElementById(dst);
-    if(el){el.textContent=val||'—';el.style.color=_npsColor(val);}
-  });
   try { checkKPIAlerts(); } catch(e) {}
   try { renderKPIHealthSummary(); renderKPISmartInsights(); } catch(e) {}
 }
@@ -5321,7 +5311,7 @@ updateSummary();
   if(gi) gi.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addAgendaGoal();}});
 })();
 checkAutoSuggestions();
-renderTaskTrendChart();
+renderResumenKPIs();
 updateReunionOriginSelect();
 requestNotifPerm();
 scheduleAllNotifications();
@@ -7249,17 +7239,112 @@ function _initRadarCollapseState() {
   } catch(e) {}
 }
 
+/* ═══════════════════════════════════════════════
+   MIS KPIs — Selectable 5-KPI mini-cards for Resumen
+═══════════════════════════════════════════════ */
+const RESUMEN_KPI_CATALOG = [
+  { key:'ventas',         label:'💰 Ventas Totales',  short:'Ventas',      valKey:'ventas',         objKey:'objVentas' },
+  { key:'nps',            label:'⭐ NPS Tienda',       short:'NPS Tienda',  valKey:'nps',            objKey:'objNps' },
+  { key:'dta',            label:'⏰ DTA Horas',        short:'DTA',         valKey:'dta',            objKey:'objDta' },
+  { key:'conv',           label:'🔄 Conversión',       short:'Conv.',       valKey:'conv',           objKey:'objConv' },
+  { key:'trafico',        label:'👣 Tráfico',           short:'Tráfico',     valKey:'trafico',        objKey:'objTrafico' },
+  { key:'ventasBusiness', label:'💼 Ventas Business',  short:'Business',    valKey:'ventasBusiness', objKey:'objVentasBusiness' },
+  { key:'ventasApu',      label:'📱 Ventas APU',       short:'APU',         valKey:'ventasApu',      objKey:'objVentasApu' },
+  { key:'ventasSfs',      label:'🚚 Ventas SFS',       short:'SFS',         valKey:'ventasSfs',      objKey:'objVentasSfs' },
+  { key:'npsShop',        label:'🛍️ NPS Shopping',     short:'NPS Shop',    valKey:'npsShop',        objKey:'objNpsShop' },
+  { key:'npsApu',         label:'🔧 NPS APU',           short:'NPS APU',     valKey:'npsApu',         objKey:'objNpsApu' },
+  { key:'npsSupport',     label:'🎧 NPS Support',      short:'NPS Sup',     valKey:'npsSupport',     objKey:'objNpsSupport' },
+  { key:'npsTaa',         label:'🎓 NPS T@A',           short:'NPS T@A',     valKey:'npsTaa',         objKey:'objNpsTaa' },
+  { key:'intros1k',       label:'📲 Intros/1K',         short:'Intros/1K',   valKey:'intros1k',       objKey:'objIntros1k' },
+  { key:'timely',         label:'⏱️ Timely %',          short:'Timely',      valKey:'timely',         objKey:'objTimely' },
+  { key:'cpUsage',        label:'🔗 C&P Usage %',       short:'C&P',         valKey:'cpUsage',        objKey:'objCpUsage' },
+  { key:'gbConv',         label:'📊 GB Conv. %',        short:'GB Conv',     valKey:'gbConv',         objKey:'objGbConv' },
+  { key:'introsSessions', label:'📲 Intros/1K Ses.',   short:'Intros Ses',  valKey:'introsSessions', objKey:'objIntrosSessions' },
+  { key:'iphoneTat',      label:'📱 iPhone TAT',        short:'iPhone TAT',  valKey:'iphoneTat',      objKey:'objIphoneTat' },
+  { key:'upt',            label:'🛍️ UPT',               short:'UPT',         valKey:'upt',            objKey:'objUpt' },
+];
+const RESUMEN_KPIS_KEY = 'apg_resumen_kpis';
+const RESUMEN_KPIS_DEFAULT = ['ventas','nps','conv','trafico','dta'];
+const MAX_RESUMEN_KPIS = 5;
+
+function getResumenKPISelection() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(RESUMEN_KPIS_KEY));
+    if (Array.isArray(stored) && stored.length) return stored.slice(0, MAX_RESUMEN_KPIS);
+  } catch(e) {}
+  return RESUMEN_KPIS_DEFAULT;
+}
+
+function renderResumenKPIs() {
+  const wrap = document.getElementById('resumen-kpis-wrap');
+  if (!wrap) return;
+  const kpis = load(K.kpis, {});
+  const selection = getResumenKPISelection();
+  const cards = selection.map(key => {
+    const def = RESUMEN_KPI_CATALOG.find(c => c.key === key);
+    if (!def) return '';
+    const val = kpis[def.valKey];
+    const obj = kpis[def.objKey];
+    const v = num(val), o = num(obj);
+    const pct = o > 0 ? Math.min(Math.round(v / o * 100), 120) : 0;
+    const color = o > 0 ? (pct >= 90 ? 'var(--success)' : pct >= 70 ? 'var(--warning,#ff9f0a)' : 'var(--danger)') : 'var(--text-secondary)';
+    const barWidth = Math.min(pct, 100);
+    return `<div class="resumen-kpi-card">
+      <div class="resumen-kpi-label">${def.label}</div>
+      <div class="resumen-kpi-value" style="color:${color}">${val || '—'}</div>
+      <div class="resumen-kpi-obj">Obj: ${obj || '—'}</div>
+      <div class="resumen-kpi-bar-wrap"><div class="resumen-kpi-bar-fill" style="width:${barWidth}%;background:${color}"></div></div>
+      <div class="resumen-kpi-pct" style="color:${color}">${o > 0 ? pct + '%' : '—'}</div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML = cards || `<div style="font-size:13px;color:var(--text-secondary);padding:12px 0">Selecciona KPIs con ⚙️</div>`;
+}
+window.renderResumenKPIs = renderResumenKPIs;
+
+function toggleResumenKPISelector() {
+  const sel = document.getElementById('resumen-kpi-selector');
+  if (!sel) return;
+  if (sel.style.display !== 'none') { sel.style.display = 'none'; return; }
+  const selection = getResumenKPISelection();
+  sel.innerHTML = `
+    <div class="rks-header">
+      <span>Elige hasta ${MAX_RESUMEN_KPIS} KPIs</span>
+      <button class="rks-close" onclick="toggleResumenKPISelector()">✕</button>
+    </div>
+    <div class="rks-list">
+      ${RESUMEN_KPI_CATALOG.map(c => `
+        <label class="rks-item">
+          <input type="checkbox" value="${c.key}" ${selection.includes(c.key) ? 'checked' : ''} onchange="onResumenKPICheck(this)">
+          <span>${c.label}</span>
+        </label>`).join('')}
+    </div>`;
+  sel.style.display = 'block';
+}
+window.toggleResumenKPISelector = toggleResumenKPISelector;
+
+function onResumenKPICheck(checkbox) {
+  const sel = document.getElementById('resumen-kpi-selector');
+  if (!sel) return;
+  const checkboxes = [...sel.querySelectorAll('input[type=checkbox]')];
+  const checked = checkboxes.filter(cb => cb.checked);
+  if (checked.length > MAX_RESUMEN_KPIS) { checkbox.checked = false; return; }
+  const newSelection = checked.map(cb => cb.value);
+  localStorage.setItem(RESUMEN_KPIS_KEY, JSON.stringify(newSelection));
+  renderResumenKPIs();
+  renderRadarChart();
+}
+window.onResumenKPICheck = onResumenKPICheck;
+
 function renderRadarChart() {
   const wrap = document.getElementById('radar-chart-wrap');
   if (!wrap) return;
   const kpis = load(K.kpis, {});
-  const metrics = [
-    { label: 'Ventas',    val: num(kpis.ventas),  obj: num(kpis.objVentas) },
-    { label: 'NPS',       val: num(kpis.nps),     obj: num(kpis.objNps) },
-    { label: 'DTA',       val: num(kpis.dta),     obj: num(kpis.objDta) },
-    { label: 'Conv.',     val: num(kpis.conv),    obj: num(kpis.objConv) },
-    { label: 'Tráfico',   val: num(kpis.trafico), obj: num(kpis.objTrafico) },
-  ];
+  const selection = getResumenKPISelection();
+  const metrics = selection.map(key => {
+    const def = RESUMEN_KPI_CATALOG.find(c => c.key === key);
+    if (!def) return null;
+    return { label: def.short, val: num(kpis[def.valKey]), obj: num(kpis[def.objKey]) };
+  }).filter(Boolean);
   const N = metrics.length;
   const CX = 160, CY = 160, R = 120;
   const angleStep = (2 * Math.PI) / N;
@@ -7447,12 +7532,6 @@ function renderSmartInsights() {
     return o > 0 && v >= o;
   });
   if (allAbove && num(kpis.objVentas) > 0) insights.push({ type: 'positive', icon: '🎯', text: '¡Todos los KPIs principales están por encima del objetivo! Gran semana' });
-
-  /* Pulse check suggestion */
-  const pulses = load(K.pulse, []);
-  if (!pulses.length || (pulses.length && (Date.now() - new Date(pulses[pulses.length-1].createdAt).getTime()) > 7*86400000)) {
-    insights.push({ type: 'info', icon: '💓', text: 'No has hecho Pulse Check esta semana — es un buen momento para reflexionar' });
-  }
 
   if (!insights.length) { wrap.innerHTML = ''; return; }
 
@@ -7875,8 +7954,6 @@ function renderMissionControl() {
       if (dev < worstDev) { worstDev = dev; worstKpi = k; }
     }
   });
-  const pulseData = load(K.pulse, []);
-  const lastPulse = pulseData.length ? pulseData[pulseData.length - 1] : null;
 
   const blockStyle = 'background:var(--surface2);border-radius:var(--radius);padding:14px;';
   const blockTitle = t => `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:8px">${t}</div>`;
@@ -7901,20 +7978,10 @@ function renderMissionControl() {
        <div style="font-size:12px;color:var(--danger);margin-top:2px">${Math.round(worstDev * 100)}% del objetivo</div>`
     : `<div style="font-size:12px;color:var(--text-secondary)">Sin datos KPI</div>`;
 
-  // Block 4: Pulse check
-  const pulseHTML = lastPulse
-    ? `<div style="display:flex;gap:14px;flex-wrap:wrap">
-        <div style="text-align:center"><div style="font-size:20px;font-weight:700">${lastPulse.energy}</div><div style="font-size:11px;color:var(--text-secondary)">⚡ Energía</div></div>
-        <div style="text-align:center"><div style="font-size:20px;font-weight:700">${lastPulse.momentum}</div><div style="font-size:11px;color:var(--text-secondary)">🚀 Momentum</div></div>
-        <div style="text-align:center"><div style="font-size:20px;font-weight:700">${lastPulse.climate}</div><div style="font-size:11px;color:var(--text-secondary)">🌤️ Clima</div></div>
-      </div>`
-    : `<div style="font-size:12px;color:var(--text-secondary)">Sin Pulse Check registrado</div>`;
-
   wrap.innerHTML = `
     <div style="${blockStyle}">${blockTitle('📅 Hoy')}${evHTML}</div>
     <div style="${blockStyle}">${blockTitle('✅ Tareas prioritarias')}${taskHTML}</div>
-    <div style="${blockStyle}">${blockTitle('📊 KPI crítico')}${kpiHTML}</div>
-    <div style="${blockStyle}">${blockTitle('💓 Pulse Check')}${pulseHTML}</div>`;
+    <div style="${blockStyle}">${blockTitle('📊 KPI crítico')}${kpiHTML}</div>`;
 }
 
 /* ═══════════════════════════════════════════════
@@ -8245,6 +8312,7 @@ function routineEisDrop(e, urgente, importante, weekStart) {
   if (document.getElementById('tab-resumen')?.classList.contains('active')) {
     renderMissionControl();
     renderRadarChart();
+    renderResumenKPIs();
   }
 })();
 

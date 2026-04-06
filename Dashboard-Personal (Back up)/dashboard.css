@@ -4813,3 +4813,151 @@ button.index-card {
   transition: transform 0.2s;
 }
 .radar-toggle-icon.collapsed { transform: rotate(-90deg); }
+
+/* ── Weekly Report discrete link in Resumen header ── */
+.weekly-report-link {
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+.weekly-report-link:hover { opacity: 1; text-decoration: underline; }
+
+/* ── Mis KPIs block — 5 selectable mini-cards ── */
+.resumen-kpis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.resumen-kpis-gear {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+.resumen-kpis-gear:hover {
+  background: var(--surface2);
+  color: var(--text-primary);
+}
+
+.resumen-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  .resumen-kpis-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+  .resumen-kpis-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.resumen-kpi-card {
+  background: var(--surface2);
+  border-radius: var(--radius-sm, 10px);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.resumen-kpi-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resumen-kpi-value {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.resumen-kpi-obj {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.resumen-kpi-bar-wrap {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 3px 0 1px;
+}
+
+.resumen-kpi-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.resumen-kpi-pct {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ── KPI Selector popup ── */
+.resumen-kpi-selector {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 10px);
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+.rks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rks-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text-secondary);
+  padding: 0 4px;
+  line-height: 1;
+}
+.rks-close:hover { color: var(--text-primary); }
+
+.rks-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 6px;
+}
+
+.rks-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 7px;
+  color: var(--text-primary);
+  transition: background 0.12s;
+}
+.rks-item:hover { background: var(--surface2); }
+.rks-item input[type=checkbox] { flex-shrink: 0; accent-color: var(--accent); }
