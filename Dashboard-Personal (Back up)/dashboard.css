@@ -1248,6 +1248,7 @@
       backdrop-filter: saturate(180%) blur(20px);
       -webkit-backdrop-filter: saturate(180%) blur(20px);
     }
+    .index-header .notif-btn { margin-left: auto; }
     .index-main {
       flex: 1;
       display: flex;
