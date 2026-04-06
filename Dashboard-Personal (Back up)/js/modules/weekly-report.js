@@ -790,9 +790,17 @@ export function emailWeeklyReport() {
 
   const body = lines.join('\n');
   const subject = `Weekly Recap — Apple Passeig de Gràcia — Semana del ${weekLabel}`;
-  const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const encodedSubject = encodeURIComponent(subject);
+  const encodedBody = encodeURIComponent(body);
+  const mailtoUrl = `mailto:?subject=${encodedSubject}&body=${encodedBody}`;
 
-  // Try opening mailto; show toast if body is large
+  // mailto: URLs have a ~2000-char limit in many clients; warn user if exceeded
+  if (mailtoUrl.length > 2000) {
+    showToast('⚠️ El informe es muy largo para el enlace de correo. Cópialo manualmente desde el Weekly Report.');
+    navigator.clipboard.writeText(body).catch(() => {});
+    return;
+  }
+
   try {
     window.location.href = mailtoUrl;
   } catch(e) {

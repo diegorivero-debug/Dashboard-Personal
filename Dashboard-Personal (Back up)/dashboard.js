@@ -4945,7 +4945,7 @@ function renderRoutineStep(step, container, weekStart) {
           <div style="font-size:36px;margin-bottom:12px">✅</div>
           <div style="font-size:16px;font-weight:700;margin-bottom:8px">Ya cerraste la semana del ${prevWeekLabel}</div>
           <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px">Los KPIs y notas están archivados. ¡A por la nueva semana!</div>
-          <button class="btn btn-primary" onclick="renderRoutineStep(2)">Continuar a Paso 1 →</button>
+          <button class="btn btn-primary" onclick="renderRoutineStep(2)">Continuar a preparar la semana →</button>
         </div>`;
     } else {
       // Formulario de cierre
