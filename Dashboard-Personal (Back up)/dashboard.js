@@ -287,7 +287,7 @@ function switchTab(name) {
   if (tabEl) tabEl.classList.add('active');
   const tabBtn = document.querySelector(`#nav-tabs-bar .nav-tab[data-tab="${name}"]`);
   if (tabBtn) tabBtn.classList.add('active');
-  if(name==='resumen')       { updateSummary(); checkAutoSuggestions(); renderTaskTrendChart(); renderFocusMetricDisplay(); renderKPIStreakAlerts(); renderMissionControl(); renderRadarChart(); }
+  if(name==='resumen')       { updateSummary(); checkAutoSuggestions(); renderTaskTrendChart(); renderFocusMetricDisplay(); renderKPIStreakAlerts(); renderMissionControl(); renderRadarChart(); populateFocusMetricCommitmentsOptions?.(); }
   if(name==='routine')       renderRoutine();
   if(name==='kpis')          { renderKPIStreakAlerts(); renderCommitmentsKPIsMirror(); }
   if(name==='reuniones')     { renderReuniones(); updateReunionOriginSelect(); }
@@ -1988,11 +1988,74 @@ const FOCUS_METRIC_OPTIONS = [
   { value: 'pulse-action-plan',   label: '📋 Pulse Action Plan Completion %' },
 ];
 
+/**
+ * Populates (or refreshes) the Commitments optgroup in the Focus Metric
+ * <select> using the KPIs from the active quarter in COMMITMENTS_DATA.
+ * Falls back to the static FOCUS_METRIC_OPTIONS list when commitments data
+ * is unavailable so the widget always shows something meaningful.
+ */
+function populateFocusMetricCommitmentsOptions() {
+  const sel = document.getElementById('focus-metric-select');
+  if (!sel) return;
+
+  // Remove any previously generated Commitments optgroup
+  const existing = sel.querySelector('optgroup[data-dynamic-commitments]');
+  if (existing) existing.remove();
+
+  // Determine active quarter label and KPIs
+  let quarterLabel = 'Commitments';
+  let kpiOptions   = [];
+
+  if (typeof QUARTERS_CONFIG !== 'undefined' && typeof COMMITMENTS_DATA !== 'undefined') {
+    const activeConfig = QUARTERS_CONFIG.find(q => q.activo);
+    if (activeConfig) {
+      quarterLabel = activeConfig.label;
+      const qData  = COMMITMENTS_DATA[activeConfig.key];
+      if (qData && Array.isArray(qData.areas)) {
+        qData.areas.forEach(area => {
+          if (Array.isArray(area.kpis)) {
+            area.kpis.forEach(kpi => {
+              // Map kpi id to an emoji label from FOCUS_METRIC_OPTIONS when available
+              const known = FOCUS_METRIC_OPTIONS.find(o => o.value === kpi.id);
+              kpiOptions.push({
+                value: kpi.id,
+                label: known ? known.label : kpi.nombre
+              });
+            });
+          }
+        });
+      }
+    }
+  }
+
+  // Fallback: use the static commitments entries from FOCUS_METRIC_OPTIONS
+  if (kpiOptions.length === 0) {
+    const kpiKeys = new Set(['ventas','nps','dta','conv','upt']);
+    FOCUS_METRIC_OPTIONS.forEach(o => {
+      if (!kpiKeys.has(o.value)) kpiOptions.push(o);
+    });
+  }
+
+  if (kpiOptions.length === 0) return;
+
+  const optgroup = document.createElement('optgroup');
+  optgroup.label = `── Commitments ${quarterLabel} ──`;
+  optgroup.dataset.dynamicCommitments = '1';
+  kpiOptions.forEach(({ value, label }) => {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    optgroup.appendChild(opt);
+  });
+  sel.appendChild(optgroup);
+}
+
 function renderFocusMetricWidget() {
   const fm = load(K.focusMetric, {});
   const sel = document.getElementById('focus-metric-select');
   const hyp = document.getElementById('focus-metric-hypothesis');
   const ref = document.getElementById('focus-metric-reflection');
+  populateFocusMetricCommitmentsOptions();
   if (sel && fm.metric) sel.value = fm.metric;
   if (hyp) hyp.value = fm.hypothesis || '';
   if (ref) ref.value = fm.reflection || '';
@@ -5264,6 +5327,8 @@ updateLaunchBadge();
 renderFocusMetricDisplay();
 renderKPIStreakAlerts();
 initPulse();
+populateFocusMetricCommitmentsOptions();
+_initRadarCollapseState();
 const currentHour = new Date().getHours();
 if(currentHour>=7 && currentHour<11) showBriefingIfNeeded();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW registration failed:', e));
@@ -7145,6 +7210,38 @@ function saveConvNotes() {
 /* ═══════════════════════════════════════════════
    F1 — RADAR CHART KPIs (SVG puro)
 ═══════════════════════════════════════════════ */
+
+/**
+ * Toggles the Radar KPIs card between expanded and collapsed.
+ * Persists the preference in localStorage so it survives page reloads.
+ */
+function toggleRadarChart() {
+  const body    = document.getElementById('radar-body');
+  const icon    = document.getElementById('radar-toggle-icon');
+  const header  = document.querySelector('.radar-toggle-header');
+  if (!body) return;
+  const isOpen  = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : '';
+  if (icon) icon.classList.toggle('collapsed', isOpen);
+  if (header) header.setAttribute('aria-expanded', String(!isOpen));
+  try { localStorage.setItem('apg_radar_open', isOpen ? '0' : '1'); } catch(e) {}
+}
+
+/** Restore collapse state on load */
+function _initRadarCollapseState() {
+  try {
+    const open  = localStorage.getItem('apg_radar_open');
+    if (open === '0') {
+      const body   = document.getElementById('radar-body');
+      const icon   = document.getElementById('radar-toggle-icon');
+      const header = document.querySelector('.radar-toggle-header');
+      if (body)   body.style.display = 'none';
+      if (icon)   icon.classList.add('collapsed');
+      if (header) header.setAttribute('aria-expanded', 'false');
+    }
+  } catch(e) {}
+}
+
 function renderRadarChart() {
   const wrap = document.getElementById('radar-chart-wrap');
   if (!wrap) return;

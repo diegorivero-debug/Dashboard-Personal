@@ -48,6 +48,8 @@ export function renderGroupTabs(group) {
   bar.innerHTML = tabs.map(t =>
     `<div class="nav-tab" data-tab="${t.id}" onclick="switchTab('${t.id}')">${t.label}</div>`
   ).join('');
+  // Update scroll indicators after rendering new tabs
+  requestAnimationFrame(updateNavTabsScrollIndicators);
 }
 
 export function switchGroup(group, tabOverride) {
@@ -132,3 +134,55 @@ if (document.readyState === 'loading') {
 } else {
   window.checkAutoBackup?.();
 }
+
+/* ── NAV TABS SCROLL INDICATORS ── */
+
+/**
+ * Updates the gradient fades and arrow button visibility on the
+ * nav-tabs-wrapper based on the current scroll position.
+ * Called after tab rendering and on every scroll event.
+ */
+export function updateNavTabsScrollIndicators() {
+  const bar     = document.getElementById('nav-tabs-bar');
+  const wrapper = document.getElementById('nav-tabs-wrapper');
+  const arrowL  = document.getElementById('nav-tabs-arrow-left');
+  const arrowR  = document.getElementById('nav-tabs-arrow-right');
+  if (!bar || !wrapper) return;
+
+  const hasOverflow = bar.scrollWidth > bar.clientWidth + 2; // 2px buffer for sub-pixel rendering differences across browsers
+  const atStart     = bar.scrollLeft <= 2;
+  const atEnd       = bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 2;
+
+  wrapper.classList.toggle('tabs-scrolled', !atStart);
+  wrapper.classList.toggle('tabs-at-end',   atEnd || !hasOverflow);
+
+  if (arrowL) arrowL.classList.toggle('visible', hasOverflow && !atStart);
+  if (arrowR) arrowR.classList.toggle('visible', hasOverflow && !atEnd);
+}
+
+/**
+ * Scrolls the nav-tabs bar by a fixed amount.
+ * @param {number} direction  +1 to scroll right, -1 to scroll left
+ */
+export function scrollNavTabs(direction) {
+  const bar = document.getElementById('nav-tabs-bar');
+  if (!bar) return;
+  bar.scrollBy({ left: direction * 160, behavior: 'smooth' });
+}
+
+/* Attach scroll listener to the nav-tabs bar once the DOM is ready */
+function _initNavTabsScrollListener() {
+  const bar = document.getElementById('nav-tabs-bar');
+  if (!bar) return;
+  bar.addEventListener('scroll', updateNavTabsScrollIndicators, { passive: true });
+  window.addEventListener('resize', updateNavTabsScrollIndicators, { passive: true });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initNavTabsScrollListener, { once: true });
+} else {
+  _initNavTabsScrollListener();
+}
+
+/* Expose to global scope so inline onclick="scrollNavTabs(...)" works */
+window.scrollNavTabs = scrollNavTabs;
