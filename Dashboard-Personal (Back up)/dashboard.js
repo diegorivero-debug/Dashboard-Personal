@@ -49,6 +49,24 @@ function _idbSet(k, v) {
   }));
 }
 
+function _idbGet(k) {
+  return _initIDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(_IDB_STORE, 'readonly');
+    const req = tx.objectStore(_IDB_STORE).get(k);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  }));
+}
+
+function _idbDelete(k) {
+  return _initIDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(_IDB_STORE, 'readwrite');
+    tx.objectStore(_IDB_STORE).delete(k);
+    tx.oncomplete = resolve;
+    tx.onerror = e => reject(e.target.error);
+  }));
+}
+
 function save(k, v) {
   try {
     localStorage.setItem(k, JSON.stringify(v));
@@ -65,6 +83,221 @@ function save(k, v) {
       showToast('Error al guardar los datos', 'error');
     }
   }
+  _scheduleFileSync();
+}
+
+/* ═══════════════════════════════════════════════
+   BOX SYNC — File System Access API
+   Persists all apg_ localStorage keys to a local
+   JSON file in the user's Box-synced folder.
+   Uses the same IDB store as the quota fallback
+   to persist the FileSystemFileHandle between sessions.
+═══════════════════════════════════════════════ */
+const _BOX_HANDLE_KEY = '_fileHandle';
+let _boxFileHandle = null;    // FileSystemFileHandle | null
+let _boxSyncTimer  = null;    // debounce timer id
+let _boxLastSync   = null;    // Date | null
+
+/* Collect all apg_ keys from localStorage into the JSON payload */
+function _buildFileSyncPayload() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('apg_')) {
+      try { data[key] = JSON.parse(localStorage.getItem(key)); }
+      catch(_) { data[key] = localStorage.getItem(key); }
+    }
+  }
+  return {
+    _meta: {
+      app: 'Dashboard Apple Passeig de Gràcia',
+      version: '1.0',
+      lastSaved: new Date().toISOString(),
+      lastSavedBy: 'Diego Rivero'
+    },
+    data
+  };
+}
+
+/* Write payload to the connected file — returns Promise */
+async function _writeToFile() {
+  if (!_boxFileHandle) return;
+  const btn = document.getElementById('box-sync-btn');
+  try {
+    btn && btn.classList.replace('synced', 'syncing') || btn && btn.classList.add('syncing');
+    const writable = await _boxFileHandle.createWritable();
+    await writable.write(JSON.stringify(_buildFileSyncPayload(), null, 2));
+    await writable.close();
+    _boxLastSync = new Date();
+    if (btn) { btn.classList.remove('syncing', 'error'); btn.classList.add('synced'); }
+  } catch(err) {
+    console.warn('Box sync write error:', err);
+    if (btn) { btn.classList.remove('syncing', 'synced'); btn.classList.add('error'); }
+    // If permission was revoked, detach silently
+    if (err && err.name === 'NotAllowedError') { _boxFileHandle = null; _idbDelete(_BOX_HANDLE_KEY).catch(() => {}); }
+  }
+}
+
+/* Debounced entry point — called by save() */
+function _scheduleFileSync() {
+  if (!_boxFileHandle) return;
+  clearTimeout(_boxSyncTimer);
+  _boxSyncTimer = setTimeout(_writeToFile, 2000);
+}
+
+/* Request (or re-verify) permission for a stored handle */
+async function _verifyHandlePermission(handle) {
+  try {
+    const opts = { mode: 'readwrite' };
+    if (await handle.queryPermission(opts) === 'granted') return true;
+    const result = await handle.requestPermission(opts);
+    return result === 'granted';
+  } catch(_) { return false; }
+}
+
+/* Load file data on startup — called from DOMContentLoaded */
+async function _initBoxSync() {
+  if (!window.showSaveFilePicker) return; // Unsupported browser
+  try {
+    const handle = await _idbGet(_BOX_HANDLE_KEY);
+    if (!handle) return;
+    const granted = await _verifyHandlePermission(handle);
+    if (!granted) return;
+    _boxFileHandle = handle;
+    const btn = document.getElementById('box-sync-btn');
+
+    // Read file and compare timestamps
+    const file = await handle.getFile();
+    const text = await file.text();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch(_) { parsed = null; }
+
+    if (parsed && parsed._meta && parsed.data && typeof parsed.data === 'object') {
+      const fileSaved   = parsed._meta.lastSaved ? new Date(parsed._meta.lastSaved).getTime() : 0;
+      const lsBackup    = parseInt(localStorage.getItem('apg_last_backup') || '0', 10);
+      if (fileSaved > lsBackup) {
+        // File is newer — import into localStorage
+        Object.keys(parsed.data).filter(k => k.startsWith('apg_')).forEach(key => {
+          try { localStorage.setItem(key, JSON.stringify(parsed.data[key])); }
+          catch(err) { console.warn('Box import key error:', key, err); }
+        });
+        localStorage.setItem('apg_last_backup', fileSaved.toString());
+      } else {
+        // localStorage is newer — push to file
+        await _writeToFile();
+      }
+    } else {
+      // File empty/invalid — write current data
+      await _writeToFile();
+    }
+
+    if (btn) { btn.classList.add('synced'); }
+  } catch(err) {
+    console.warn('Box sync init error:', err);
+  }
+}
+
+/* Toggle button handler */
+async function toggleBoxSync() {
+  if (!window.showSaveFilePicker) {
+    showToast('Tu navegador no soporta sincronización con archivos locales. Usa Chrome o Edge.', 'error');
+    return;
+  }
+
+  // Close any existing popup
+  const existingPopup = document.getElementById('box-sync-popup');
+  if (existingPopup) { existingPopup.remove(); return; }
+
+  if (_boxFileHandle) {
+    // Show status popup
+    _showBoxSyncPopup();
+  } else {
+    // Connect to file
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'dashboard-data.json',
+        types: [{ description: 'JSON Data', accept: { 'application/json': ['.json'] } }]
+      });
+      _boxFileHandle = handle;
+      await _idbSet(_BOX_HANDLE_KEY, handle);
+      await _writeToFile();
+      showToast('✅ Conectado a ' + handle.name);
+    } catch(err) {
+      if (err && err.name !== 'AbortError') {
+        console.warn('Box sync connect error:', err);
+        showToast('❌ No se pudo conectar al archivo', 'error');
+      }
+    }
+  }
+}
+
+/* Small status popup shown when already connected */
+function _showBoxSyncPopup() {
+  const btn = document.getElementById('box-sync-btn');
+  if (!btn) return;
+
+  const popup = document.createElement('div');
+  popup.id = 'box-sync-popup';
+
+  const rect = btn.getBoundingClientRect();
+  popup.style.top  = (rect.bottom + 8) + 'px';
+  popup.style.right = (window.innerWidth - rect.right) + 'px';
+
+  const lastSyncText = _boxLastSync
+    ? _fmtRelativeTime(_boxLastSync)
+    : 'nunca';
+  const fileName = _boxFileHandle ? _boxFileHandle.name : 'dashboard-data.json';
+
+  popup.innerHTML = `
+    <div class="bsp-title">📁 Conectado: ${fileName}</div>
+    <div class="bsp-sub">Última sincronización: ${lastSyncText}</div>
+    <div class="bsp-btns">
+      <button class="bsp-btn" onclick="_boxSyncNow()">🔄 Sincronizar ahora</button>
+      <button class="bsp-btn danger" onclick="_boxDisconnect()">❌ Desconectar</button>
+    </div>`;
+  document.body.appendChild(popup);
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function closePopup(e) {
+      if (!popup.contains(e.target) && e.target !== btn) {
+        popup.remove();
+        document.removeEventListener('click', closePopup);
+      }
+    });
+  }, 10);
+}
+
+function _fmtRelativeTime(date) {
+  const diffMs  = Date.now() - date.getTime();
+  const diffMin = Math.round(diffMs / 60000);
+  if (diffMin < 1)  return 'hace un momento';
+  if (diffMin < 60) return `hace ${diffMin} min`;
+  const diffH = Math.round(diffMin / 60);
+  if (diffH < 24)   return `hace ${diffH} h`;
+  return `hace ${Math.round(diffH / 24)} días`;
+}
+
+async function _boxSyncNow() {
+  document.getElementById('box-sync-popup')?.remove();
+  await _writeToFile();
+  showToast('✅ Sincronizado con ' + (_boxFileHandle?.name || 'archivo'));
+}
+
+function _boxDisconnect() {
+  document.getElementById('box-sync-popup')?.remove();
+  _boxFileHandle = null;
+  _idbDelete(_BOX_HANDLE_KEY).catch(() => {});
+  const btn = document.getElementById('box-sync-btn');
+  if (btn) btn.classList.remove('synced', 'syncing', 'error');
+  showToast('📁 Desconectado del archivo local');
+}
+
+/* Init on DOMContentLoaded */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initBoxSync, { once: true });
+} else {
+  _initBoxSync();
 }
 
 const AC_ALERT_THRESHOLD = 60; // % of AC+ goal below which an alert is shown
@@ -8480,6 +8713,8 @@ function importData() {
           try { localStorage.setItem(key, JSON.stringify(parsed.data[key])); }
           catch(err) { console.warn('No se pudo importar clave:', key, err); }
         });
+        // If Box file is connected, sync the newly imported data to it
+        if (_boxFileHandle) _writeToFile().catch(() => {});
         location.reload();
       } catch(e) {
         showToast('❌ Error al importar el backup');
