@@ -1,0 +1,9 @@
+# Archivos de configuración local con datos reales (no subir al repo)
+Dashboard-Personal (Back up)/config.js
+
+# Instalador generado (archivos pesados, generar con crear-instalador.command)
+Dashboard-Personal (Back up)/dist/
+
+# macOS
+.DS_Store
+**/.DS_Store
