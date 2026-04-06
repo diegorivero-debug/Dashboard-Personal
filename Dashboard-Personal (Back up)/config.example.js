@@ -13,36 +13,69 @@
  */
 
 // ─────────────────────────────────────────────
-// EQUIPO DE LIDERAZGO
+// EQUIPO DE LIDERAZGO — Q2FY26 · Apple Passeig de Gràcia
 // Todos los miembros que aparecen en Feedback, TB/1:1, Reconocimientos, etc.
-// 
+//
+// Grupos:
+//   1. Managers / Sr. Managers → reportan a Diego Rivero (ids 1–9)
+//   2. Managers / Sr. Managers → reportan a Jordi Pajares (ids 10–17)
+//   3. Store Leaders (ids 18–19)
+//   4. Leads → solo vacaciones/festivos (sin manager, sin conexiones semanales) (ids 20–27)
+//
 // Campos:
 //   id:      número único (no repetir)
 //   nombre:  nombre completo (aparece en dropdowns y listas)
-//   rol:     cargo del puesto (Manager, Sr. Manager, Store Leader, etc.)
+//   rol:     cargo del puesto (Manager, Sr. Manager, Store Leader, Lead, etc.)
 //   manager: nombre del responsable directo (para filtros de equipo)
+//             → vacío "" para Leads (no tienen reporting directo asignado)
 //   email:   email corporativo (para envío de informes — puede dejarse vacío "")
 // ─────────────────────────────────────────────
 const equipoLiderazgo = [
-  { id: 1,  nombre: "Manager A",      rol: "Sr. Manager",  manager: "Store Leader B", email: "manager.a@example.com" },
-  { id: 2,  nombre: "Manager B",      rol: "Manager",      manager: "Store Leader A", email: "manager.b@example.com" },
-  { id: 3,  nombre: "Manager C",      rol: "Manager",      manager: "Store Leader A", email: "manager.c@example.com" },
-  { id: 4,  nombre: "Manager D",      rol: "Manager",      manager: "Store Leader A", email: "manager.d@example.com" },
-  { id: 5,  nombre: "Manager E",      rol: "Sr. Manager",  manager: "Store Leader A", email: "manager.e@example.com" },
-  { id: 6,  nombre: "Manager F",      rol: "Manager",      manager: "Store Leader A", email: "manager.f@example.com" },
-  { id: 7,  nombre: "Manager G",      rol: "Manager",      manager: "Store Leader A", email: "manager.g@example.com" },
-  { id: 8,  nombre: "Manager H",      rol: "Manager",      manager: "Store Leader B", email: "manager.h@example.com" },
-  { id: 9,  nombre: "Manager I",      rol: "Sr. Manager",  manager: "Store Leader B", email: "manager.i@example.com" },
-  { id: 10, nombre: "Manager J",      rol: "Manager",      manager: "Store Leader B", email: "manager.j@example.com" },
-  { id: 11, nombre: "Manager K",      rol: "Manager",      manager: "Store Leader A", email: "manager.k@example.com" },
-  { id: 12, nombre: "Manager L",      rol: "Manager",      manager: "Store Leader A", email: "manager.l@example.com" },
-  { id: 13, nombre: "Manager M",      rol: "Sr. Manager",  manager: "Store Leader A", email: "manager.m@example.com" },
-  { id: 14, nombre: "Manager N",      rol: "Manager",      manager: "Store Leader B", email: "manager.n@example.com" },
-  { id: 15, nombre: "Manager O",      rol: "Manager",      manager: "Store Leader B", email: "" },
-  { id: 16, nombre: "Manager P",      rol: "Manager",      manager: "Store Leader B", email: "manager.p@example.com" },
-  { id: 17, nombre: "Manager Q",      rol: "Manager",      manager: "Store Leader B", email: "" },
-  { id: 18, nombre: "Store Leader B", rol: "Store Leader", manager: "Market Leader",  email: "sl.b@example.com" },
-  { id: 19, nombre: "Store Leader A", rol: "Store Leader", manager: "Market Leader",  email: "sl.a@example.com" }
+
+  // ── 1. Managers / Sr. Managers → Diego Rivero ────────────────────────────
+  { id: 1,  nombre: "Cristina Carcel",  rol: "Sr. Manager", manager: "Diego Rivero", email: "criscarcel@apple.com"      },
+  { id: 2,  nombre: "Itziar Cacho",     rol: "Sr. Manager", manager: "Diego Rivero", email: "icacholega@apple.com"      },
+  { id: 3,  nombre: "Meri Alvarez",     rol: "Manager",     manager: "Diego Rivero", email: "malvarezmart@apple.com"    },
+  { id: 4,  nombre: "David Carrillo",   rol: "Manager",     manager: "Diego Rivero", email: "davidcarrillo@apple.com"   },
+  { id: 5,  nombre: "Ricardo Sosa",     rol: "Manager",     manager: "Diego Rivero", email: "rsosapole@apple.com"       },
+  { id: 6,  nombre: "Ana Maria Pazos",  rol: "Manager",     manager: "Diego Rivero", email: "apazosrevuelt@apple.com"   },
+  { id: 7,  nombre: "Javi Canfranc",    rol: "Manager",     manager: "Diego Rivero", email: "jcanfranc@apple.com"       },
+  { id: 8,  nombre: "Javi Sanchez",     rol: "Manager",     manager: "Diego Rivero", email: "javisanch@apple.com"       },
+  { id: 9,  nombre: "Javier Quiros",    rol: "Manager",     manager: "Diego Rivero", email: "jquirosgomez@apple.com"    },
+
+  // ── 2. Managers / Sr. Managers → Jordi Pajares ───────────────────────────
+  { id: 10, nombre: "Sheila Yubero",    rol: "Sr. Manager", manager: "Jordi Pajares", email: "syuberoarruga@apple.com"  },
+  { id: 11, nombre: "Toni Medina",      rol: "Manager",     manager: "Jordi Pajares", email: "toni@apple.com"           },
+  { id: 12, nombre: "Jorge Gil",        rol: "Sr. Manager", manager: "Jordi Pajares", email: "jorgegilXX@apple.com"     },
+  { id: 13, nombre: "Pedro Borlido",    rol: "Manager",     manager: "Jordi Pajares", email: "pbd@apple.com"            },
+  { id: 14, nombre: "Jesus Pazos",      rol: "Manager",     manager: "Jordi Pajares", email: "j_pazos@apple.com"        },
+  { id: 15, nombre: "Deborah Ibañez",   rol: "Manager",     manager: "Jordi Pajares", email: "deborah_ibanezroc@apple.com" },
+  { id: 16, nombre: "Cristina Uson",    rol: "Manager",     manager: "Jordi Pajares", email: "c_uson@apple.com"         },
+  { id: 17, nombre: "Julie Robin",      rol: "Manager",     manager: "Jordi Pajares", email: "jrobin2@apple.com"        },
+
+  // ── 3. Store Leaders ─────────────────────────────────────────────────────
+  { id: 18, nombre: "Diego Rivero",     rol: "Store Leader", manager: "", email: "driverobasco@apple.com"               },
+  { id: 19, nombre: "Jordi Pajares",    rol: "Store Leader", manager: "", email: "jpajaresfurn@apple.com"               },
+
+  // ── 4. Leads — solo vacaciones/festivos (sin manager, sin conexiones semanales) ──
+  { id: 20, nombre: "Aurora Comesaña",  rol: "Ops Lead (Backstage)",    manager: "", email: "comesany@apple.com"        },
+  { id: 21, nombre: "Rubén Martínez",   rol: "Ops Lead (Backstage)",    manager: "", email: "rnezmodi@apple.com"        },
+  { id: 22, nombre: "Clara Gonzalez",   rol: "Lead (F&B)",              manager: "", email: "clara@apple.com"           },
+  { id: 23, nombre: "Elisabet Moreno",  rol: "Lead (F&B)",              manager: "", email: "emorenolop@apple.com"      },
+  { id: 24, nombre: "Eva Famoso",       rol: "Lead (Genius Bar)",       manager: "", email: "efamoso@apple.com"         },
+  { id: 25, nombre: "Eva Hernandez",    rol: "Lead (Genius Bar)",       manager: "", email: "hernandez.ev@apple.com"    },
+  { id: 26, nombre: "Alberto Ortiz",    rol: "Lead (Genius Bar)",       manager: "", email: "aortizpastor@apple.com"    },
+  { id: 27, nombre: "Bryan",            rol: "Store Leader (El Corte Inglés)", manager: "", email: ""                   },
+];
+
+// ─────────────────────────────────────────────
+// VACACIONES DEL EQUIPO
+// Períodos de vacaciones de cada miembro para la sección Leadership Schedule.
+// Formato: array de objetos con nombre, inicio (fecha inicio), fin (fecha fin)
+// ─────────────────────────────────────────────
+const vacacionesEquipo = [
+  // Ejemplo — reemplaza con datos reales:
+  // { nombre: "Cristina Carcel", inicio: "2026-07-15", fin: "2026-08-05" },
 ];
 
 // ─────────────────────────────────────────────
