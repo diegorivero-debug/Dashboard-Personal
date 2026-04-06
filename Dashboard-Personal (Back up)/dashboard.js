@@ -772,7 +772,7 @@ function refreshProgressBars() {
     let pct = 0;
     if (o > 0) {
       if (kpi.inverse) {
-        pct = Math.min(Math.round(o / v * 100), 100);
+        pct = v > 0 ? Math.min(Math.round(o / v * 100), 100) : 0;
       } else {
         pct = Math.min(Math.round(v / o * 100), 100);
       }
@@ -787,7 +787,7 @@ function refreshProgressBars() {
         bar.style.background = pct >= 90 ? 'var(--success)' : pct >= 70 ? 'var(--warning,#ff9f0a)' : 'var(--danger)';
       }
     }
-    if (pctEl) pctEl.textContent = o > 0 ? Math.round(kpi.inverse ? o / v * 100 : v / o * 100) + '%' : '—';
+    if (pctEl) pctEl.textContent = o > 0 && (!kpi.inverse || v > 0) ? Math.round(kpi.inverse ? o / v * 100 : v / o * 100) + '%' : '—';
     if (kpi.extraPct) {
       const totalEl = document.getElementById('kv-' + kpi.extraPct);
       const dispEl = document.getElementById('kpct-extra-' + kpi.id);
