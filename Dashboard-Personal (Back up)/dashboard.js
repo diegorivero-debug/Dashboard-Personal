@@ -1003,9 +1003,11 @@ let team = load(K.team, []);
 const saveTeam = () => { save(K.team, team); updateSummary(); };
 const COLORS = ['#0071e3','#34c759','#ff9f0a','#ff3b30','#af52de','#5ac8fa','#ff2d55','#30d158'];
 const initials = n => n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();
+// Canonical list lives in constants.js (LEAD_ROLES). Kept in sync here manually.
+const LEAD_ROLES_LOCAL = ['Ops Lead', 'Lead', 'Lead Genius'];
 if (!team.length) {
   team = equipoLiderazgo
-    .filter(m => !['Ops Lead', 'Lead', 'Lead Genius'].includes(m.rol))
+    .filter(m => !LEAD_ROLES_LOCAL.includes(m.rol))
     .map((m, i) => ({
     id: m.id,
     name: m.nombre,

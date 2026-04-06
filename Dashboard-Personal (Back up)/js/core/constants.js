@@ -83,6 +83,10 @@ export const equipoLiderazgo = [
   { id: 26, nombre: "Alberto Ortiz",    rol: "Lead Genius",  manager: "",              email: "aortizpastor@apple.com" },
 ];
 
+// Roles excluidos del equipo de desarrollo/conexiones (solo vacaciones/festivos).
+// dashboard.js (script no-módulo) mantiene una copia local sincronizada.
+export const LEAD_ROLES = ['Ops Lead', 'Lead', 'Lead Genius'];
+
 // Fallback recurring meetings — used only when config.js is not loaded
 export const RECURRING_MEETINGS = [
   { name: 'Comercial España',    day: 1, time: '09:00', desc: 'Reunión semanal comercial con España' },

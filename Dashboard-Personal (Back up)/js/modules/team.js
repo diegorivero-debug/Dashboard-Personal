@@ -4,7 +4,7 @@
    and 1:1 prep modal.
 ═══════════════════════════════════════════════ */
 
-import { K, equipoLiderazgo } from '../core/constants.js';
+import { K, equipoLiderazgo, LEAD_ROLES } from '../core/constants.js';
 import { load, save, esc, showToast } from '../core/utils.js';
 
 export let team = load(K.team, []);
@@ -14,7 +14,7 @@ export const initials = n => n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpp
 
 if (!team.length) {
   team = equipoLiderazgo
-    .filter(m => !['Ops Lead', 'Lead', 'Lead Genius'].includes(m.rol))
+    .filter(m => !LEAD_ROLES.includes(m.rol))
     .map((m, i) => ({
     id: m.id,
     name: m.nombre,
