@@ -8,6 +8,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Panel APG">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1c1e" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body class="index-body">
@@ -79,17 +81,16 @@
       <div class="index-card-desc">Vacaciones, devolución de festivos y peticiones del equipo de liderazgo</div>
     </a>
 
-    <div class="index-card" onclick="openSettingsModal()" style="cursor:pointer">
+    <button class="index-card" onclick="openSettingsModal()">
       <div class="index-card-icon">⚙️</div>
       <div class="index-card-title">Ajustes</div>
       <div class="index-card-desc">Apariencia, backup de datos y mantenimiento</div>
-    </div>
+    </button>
   </div>
 </main>
 
 <!-- ══════════════ MODAL: AJUSTES ══════════════ -->
-<div id="settings-modal-overlay" onclick="if(event.target===this)closeSettingsModal()"
-  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;backdrop-filter:blur(4px)">
+<div id="settings-modal-overlay" class="settings-modal-overlay" onclick="if(event.target===this)closeSettingsModal()">
   <div id="settings-modal" class="settings-modal">
 
     <!-- Cabecera -->
@@ -191,45 +192,6 @@
       if (isDarkTheme) document.documentElement.setAttribute('data-theme', 'dark');
     } catch(e) {}
   })();
-</script>
-
-<script type="module">
-  import { FISCAL_QUARTERS, DIAS, MESES } from './js/core/constants.js';
-
-  function getFiscalWeekInfo(date) {
-    let activeQ = null;
-    for (let i = FISCAL_QUARTERS.length - 1; i >= 0; i--) {
-      if (date >= FISCAL_QUARTERS[i].startDate) { activeQ = FISCAL_QUARTERS[i]; break; }
-    }
-    if (!activeQ) return null;
-    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-    const weekNum = Math.floor((date - activeQ.startDate) / msPerWeek) + 1;
-    return { week: weekNum, quarter: activeQ.label };
-  }
-
-  // DIAS en constants.js usa minúsculas → capitalizar para display
-  const DIAS_CAP = DIAS.map(d => d.charAt(0).toUpperCase() + d.slice(1));
-
-  function updateFiscalInfo() {
-    const now = new Date();
-    const dateStr = `${DIAS_CAP[now.getDay()]}, ${now.getDate()} de ${MESES[now.getMonth()]} de ${now.getFullYear()}`;
-    const dateEl = document.getElementById('index-date');
-    if (dateEl) dateEl.textContent = dateStr;
-
-    const h = String(now.getHours()).padStart(2,'0');
-    const m = String(now.getMinutes()).padStart(2,'0');
-    const s = String(now.getSeconds()).padStart(2,'0');
-    const timeEl = document.getElementById('index-time');
-    if (timeEl) timeEl.textContent = `${h}:${m}:${s}`;
-
-    const fi = getFiscalWeekInfo(now);
-    const quarterEl = document.getElementById('index-quarter');
-    if (quarterEl && fi) quarterEl.textContent = `Week ${fi.week} · ${fi.quarter}`;
-    else if (quarterEl) quarterEl.textContent = '';
-  }
-
-  updateFiscalInfo();
-  setInterval(updateFiscalInfo, 1000);
 </script>
 
 <script>
@@ -400,19 +362,19 @@
             const ts = parseInt(lastBackupRaw, 10);
             if (ts) lastBackupStr = new Date(ts).toLocaleDateString('es-ES', { day:'2-digit', month:'long', year:'numeric' });
           }
-          // Modal de confirmación inline
+          // Modal de confirmación inline — usa clases CSS en vez de estilos inline
           const overlay = document.createElement('div');
           overlay.id = 'apg-import-confirm';
-          overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999';
+          overlay.className = 'apg-import-confirm-overlay';
           overlay.innerHTML = `
-            <div style="background:var(--surface);border-radius:16px;padding:28px 24px;max-width:380px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.25)">
-              <div style="font-size:17px;font-weight:600;color:var(--text-primary);margin-bottom:12px">📦 Confirmar importación</div>
-              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px">Se van a importar <strong style="color:var(--text-primary)">${apgEntries.length} claves</strong> con prefijo <code>apg_</code>.</div>
-              ${lastBackupStr ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">Fecha del backup: <strong style="color:var(--text-primary)">${lastBackupStr}</strong></div>` : ''}
-              <div style="font-size:12px;color:#ff9f0a;margin-bottom:18px">⚠️ Se sobrescribirán los datos actuales. Esta acción no se puede deshacer.</div>
-              <div style="display:flex;gap:10px;justify-content:flex-end">
-                <button id="apg-import-cancel" style="padding:8px 18px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-primary);font-size:14px;cursor:pointer">Cancelar</button>
-                <button id="apg-import-confirm-btn" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer">✓ Importar ${apgEntries.length} claves</button>
+            <div class="apg-import-confirm-box">
+              <div class="apg-import-confirm-title">📦 Confirmar importación</div>
+              <div class="apg-import-confirm-text">Se van a importar <strong style="color:var(--text-primary)">${apgEntries.length} claves</strong> con prefijo <code>apg_</code>.</div>
+              ${lastBackupStr ? `<div class="apg-import-confirm-meta">Fecha del backup: <strong style="color:var(--text-primary)">${lastBackupStr}</strong></div>` : ''}
+              <div class="apg-import-confirm-warn">⚠️ Se sobrescribirán los datos actuales. Esta acción no se puede deshacer.</div>
+              <div class="apg-import-confirm-footer">
+                <button id="apg-import-cancel" class="apg-import-cancel-btn">Cancelar</button>
+                <button id="apg-import-confirm-btn" class="apg-import-ok-btn">✓ Importar ${apgEntries.length} claves</button>
               </div>
             </div>
           `;
@@ -460,9 +422,22 @@
           const val = localStorage.getItem(k);
           if (val) archived[k] = val;
         });
+        if (Object.keys(archived).length === 0) {
+          const result = document.getElementById('settings-archive-result');
+          if (result) { result.textContent = `ℹ️ No hay datos del mes ${label} para archivar`; setTimeout(() => { result.textContent = ''; }, 4000); }
+          return;
+        }
         localStorage.setItem(archiveKey, JSON.stringify(archived));
-        const result = document.getElementById('settings-archive-result');
-        if (result) { result.textContent = `✓ Mes ${label} archivado correctamente`; setTimeout(() => { result.textContent = ''; }, 4000); }
+        const archivedKeys = Object.keys(archived);
+        // Preguntar si quiere borrar los datos originales para liberar espacio
+        if (confirm(`✅ Mes ${label} archivado (${archivedKeys.length} claves).\n\n¿Eliminar los datos originales para liberar espacio?\nYa están guardados en el archivo.`)) {
+          archivedKeys.forEach(k => localStorage.removeItem(k));
+          const result = document.getElementById('settings-archive-result');
+          if (result) { result.textContent = `✓ Mes ${label} archivado y ${archivedKeys.length} claves borradas. ¡Espacio liberado!`; setTimeout(() => { result.textContent = ''; }, 4000); }
+        } else {
+          const result = document.getElementById('settings-archive-result');
+          if (result) { result.textContent = `✓ Mes ${label} archivado (datos originales conservados — el espacio no se ha liberado)`; setTimeout(() => { result.textContent = ''; }, 5000); }
+        }
         settingsRenderStorage();
       } catch(e) {
         const result = document.getElementById('settings-archive-result');
@@ -478,29 +453,54 @@
   })();
 </script>
 <script type="module">
-  import { K } from './js/core/constants.js';
-  import { load, esc } from './js/core/utils.js';
+  import { FISCAL_QUARTERS, DIAS, MESES, K, DEFAULT_QUOTES } from './js/core/constants.js';
+  import { load, esc, parseNum, daysDiff, localDateStr } from './js/core/utils.js';
+
+  // ── INFO FISCAL ─────────────────────────────────────────────────────────────
+
+  function getFiscalWeekInfo(date) {
+    let activeQ = null;
+    for (let i = FISCAL_QUARTERS.length - 1; i >= 0; i--) {
+      if (date >= FISCAL_QUARTERS[i].startDate) { activeQ = FISCAL_QUARTERS[i]; break; }
+    }
+    if (!activeQ) return null;
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weekNum = Math.floor((date - activeQ.startDate) / msPerWeek) + 1;
+    return { week: weekNum, quarter: activeQ.label };
+  }
+
+  // DIAS en constants.js usa minúsculas → capitalizar para display
+  const DIAS_CAP = DIAS.map(d => d.charAt(0).toUpperCase() + d.slice(1));
+
+  function updateFiscalInfo() {
+    const now = new Date();
+    const dateStr = `${DIAS_CAP[now.getDay()]}, ${now.getDate()} de ${MESES[now.getMonth()]} de ${now.getFullYear()}`;
+    const dateEl = document.getElementById('index-date');
+    if (dateEl) dateEl.textContent = dateStr;
+
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    const timeEl = document.getElementById('index-time');
+    if (timeEl) timeEl.textContent = `${h}:${m}:${s}`;
+
+    const fi = getFiscalWeekInfo(now);
+    const quarterEl = document.getElementById('index-quarter');
+    if (quarterEl && fi) quarterEl.textContent = `Week ${fi.week} · ${fi.quarter}`;
+    else if (quarterEl) quarterEl.textContent = '';
+  }
+
+  updateFiscalInfo();
+  setInterval(updateFiscalInfo, 1000);
+
+  // ── HOME WIDGETS ─────────────────────────────────────────────────────────────
 
   function renderHomeWidgets() {
     const grid = document.getElementById('hw-grid');
     if (!grid) return;
 
     const today = new Date();
-    const todayStr = (() => {
-      const y  = today.getFullYear();
-      const mo = String(today.getMonth() + 1).padStart(2, '0');
-      const d  = String(today.getDate()).padStart(2, '0');
-      return `${y}-${mo}-${d}`;
-    })();
-
-    function daysDiff(dateStr) {
-      if (!dateStr) return Infinity;
-      return Math.floor((today - new Date(dateStr + 'T12:00:00')) / 86400000);
-    }
-
-    function parseNum(v) {
-      return parseFloat(String(v || '').replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
-    }
+    const todayStr = localDateStr(today);
 
     function pct(val, obj) {
       // Cap at 150% to handle overperformance without distorting the bar
@@ -599,7 +599,7 @@
         const sessions = tbs[m.id] || [];
         if (sessions.length === 0) return true;
         const lastDate = sessions.map(s => s.date).sort().pop();
-        return daysDiff(lastDate) > 14;
+        return daysDiff(lastDate, today) > 14;
       });
       const semaphore = pending.length === 0 ? 'green' : pending.length <= 2 ? 'yellow' : 'red';
       const semColors = { green: 'var(--success,#34c759)', yellow: '#ff9f0a', red: '#ff3b30' };
@@ -620,7 +620,7 @@
           'dashboard.html?seccion=equipo'));
       } else {
         const last  = sbi[0];
-        const dAgo  = daysDiff(last.date);
+        const dAgo  = daysDiff(last.date, today);
         const badge = last.type === 'positivo' ? '🌟 Positivo' : '🌱 Desarrollo';
         const rel   = dAgo === 0 ? 'hoy' : dAgo === 1 ? 'hace 1 día' : `hace ${dAgo} días`;
         widgets.push(widget('sbi', '💬', 'Último feedback SBI',
@@ -639,11 +639,31 @@
           '<span class="hw-muted">Sin briefing registrado</span>',
           'dashboard.html?seccion=negocio'));
       } else {
-        // briefingDate stores the last completed date; show at least 1 day if done today/yesterday
-        const lastDate = new Date(briefingDateRaw + 'T12:00:00');
-        const diffDays = Math.floor((today - lastDate) / 86400000);
-        const streak   = diffDays <= 1 ? 1 : 0;
         const doneToday = briefingDateRaw === todayStr;
+
+        // Calculate real streak from dates history if available
+        const briefingDates = load(K.briefingDates, null);
+        let streak;
+        if (briefingDates && Array.isArray(briefingDates) && briefingDates.length > 0) {
+          const sortedDates = [...new Set(briefingDates)].sort().reverse();
+          streak = 0;
+          const checkDate = new Date(today);
+          // If briefing not done today, start counting from yesterday
+          if (!doneToday) checkDate.setDate(checkDate.getDate() - 1);
+          for (const d of sortedDates) {
+            const checkStr = localDateStr(checkDate);
+            if (d === checkStr) {
+              streak++;
+              checkDate.setDate(checkDate.getDate() - 1);
+            } else if (d < checkStr) {
+              break; // gap found — streak ends
+            }
+          }
+        } else {
+          // Fallback: old logic — show 1 if done today or yesterday
+          streak = daysDiff(briefingDateRaw, today) <= 1 ? 1 : 0;
+        }
+
         if (streak > 0) {
           const fire = doneToday ? '🔥' : '⏳';
           widgets.push(widget('briefing', fire, 'Racha de briefings',
@@ -669,7 +689,7 @@
       } else {
         const sorted = recogs.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
         const last   = sorted[0];
-        const dAgo   = daysDiff(last.date);
+        const dAgo   = daysDiff(last.date, today);
         const rel    = dAgo === 0 ? 'hoy' : dAgo === 1 ? 'hace 1 día' : `hace ${dAgo} días`;
         widgets.push(widget('recog', '🏆', 'Último reconocimiento',
           `<div class="hw-sbi-row"><span class="hw-sbi-person">${esc(last.personName || String(last.personId || '—'))}</span><span class="hw-sbi-meta">${esc(rel)}</span></div>`,
@@ -683,9 +703,9 @@
   }
 
   renderHomeWidgets();
-</script>
-<script type="module">
-  import { DEFAULT_QUOTES } from './js/core/constants.js';
+
+  // ── CITA DEL DÍA ─────────────────────────────────────────────────────────────
+
   try {
     const customQuotes = JSON.parse(localStorage.getItem('apg_custom_quotes') || '[]');
     const allQuotes = [...DEFAULT_QUOTES, ...customQuotes];
@@ -700,19 +720,8 @@
       quoteEl.style.display = 'block';
     }
   } catch(e) { console.error('Error loading quote:', e); }
-</script>
-<script type="module">
-  import { K } from './js/core/constants.js';
-  import { load, esc } from './js/core/utils.js';
 
-  function _parseNum(v) {
-    return parseFloat(String(v||'').replace(/[^0-9.,]/g,'').replace(',','.')) || 0;
-  }
-
-  function _daysDiff(dateStr, today) {
-    if (!dateStr) return Infinity;
-    return Math.floor((today - new Date(dateStr + 'T12:00:00')) / 86400000);
-  }
+  // ── NOTIFICACIONES ───────────────────────────────────────────────────────────
 
   function _sortAlerts(alerts) {
     const order = { high:0, medium:1, low:2 };
@@ -722,12 +731,7 @@
   function getAlertsForHome() {
     const alerts = [];
     const today = new Date();
-    const todayStr = (() => {
-      const y  = today.getFullYear();
-      const mo = String(today.getMonth()+1).padStart(2,'0');
-      const d  = String(today.getDate()).padStart(2,'0');
-      return `${y}-${mo}-${d}`;
-    })();
+    const todayStr = localDateStr(today);
     const MS_PER_DAY = 86400 * 1000;
 
     /* ── Existing rules (DOM-free) ── */
@@ -785,8 +789,8 @@
     try {
       const kpis = load(K.kpis, null);
       if (kpis) {
-        const v = _parseNum(kpis.ventas);
-        const o = _parseNum(kpis.objVentas);
+        const v = parseNum(kpis.ventas);
+        const o = parseNum(kpis.objVentas);
         if (o > 0 && v/o < 0.7) alerts.push({ icon:'📉', text:`Ventas al ${Math.round(v/o*100)}% del objetivo`, tab:'kpis', priority:'high' });
       }
     } catch(_) {}
@@ -803,7 +807,7 @@
         if (!sessions.length) return true;
         const lastDate = sessions.map(s => s.date).filter(Boolean).sort().pop();
         if (!lastDate) return true;
-        return _daysDiff(lastDate, today) > 14;
+        return daysDiff(lastDate, today) > 14;
       });
       if (pending11.length > 3) {
         alerts.push({ icon:'👥', text:`${pending11.length} personas sin 1:1 en +14 días`, tab:'equipo', priority:'high' });
@@ -811,7 +815,7 @@
         pending11.forEach(m => {
           const sessions = tbs[m.id] || [];
           const lastDate = sessions.map(s => s.date).filter(Boolean).sort().pop();
-          const days = lastDate ? _daysDiff(lastDate, today) : null;
+          const days = lastDate ? daysDiff(lastDate, today) : null;
           const suffix = days != null ? ` (+${days} días)` : '';
           alerts.push({ icon:'👥', text:`1:1 pendiente con ${m.name}${suffix}`, tab:'equipo', priority:'high' });
         });
@@ -825,8 +829,8 @@
         const sorted = [...kpiHistory].sort((a,b) => (a.date||'').localeCompare(b.date||''));
         const prev = sorted[sorted.length - 2];
         const last = sorted[sorted.length - 1];
-        const vPrev = _parseNum(prev.ventas), oPrev = _parseNum(prev.objVentas);
-        const vLast = _parseNum(last.ventas), oLast = _parseNum(last.objVentas);
+        const vPrev = parseNum(prev.ventas), oPrev = parseNum(prev.objVentas);
+        const vLast = parseNum(last.ventas), oLast = parseNum(last.objVentas);
         const pctPrev = oPrev > 0 ? vPrev / oPrev : null;
         const pctLast = oLast > 0 ? vLast / oLast : null;
         if (pctPrev != null && pctLast != null && pctPrev > 0) {
@@ -861,8 +865,8 @@
     try {
       const kpis = load(K.kpis, null);
       if (kpis) {
-        const v = _parseNum(kpis.ventas);
-        const o = _parseNum(kpis.objVentas);
+        const v = parseNum(kpis.ventas);
+        const o = parseNum(kpis.objVentas);
         if (o > 0) {
           const p = v / o * 100;
           if (p >= 85 && p < 100) alerts.push({ icon:'🎯', text:`¡Ventas al ${Math.round(p)}% del objetivo — un último empujón!`, tab:'kpis', priority:'medium' });
@@ -878,7 +882,7 @@
       } else {
         const lastSbi = sbiHistory[0];
         if (lastSbi && lastSbi.date) {
-          const sbiDays = _daysDiff(lastSbi.date, today);
+          const sbiDays = daysDiff(lastSbi.date, today);
           if (sbiDays > 14) alerts.push({ icon:'💬', text:'Llevas +14 días sin registrar feedback SBI', tab:'feedback', priority:'low' });
         }
       }
@@ -935,6 +939,15 @@
 
   // Render badge on load (don't open panel)
   renderHomeNotifs();
+
+  // ── Cerrar panel de notificaciones al hacer clic fuera ───────────────────────
+  document.addEventListener('click', function(e) {
+    const panel = document.getElementById('hw-notif-panel');
+    const bell  = document.getElementById('hw-notif-bell');
+    if (panel && panel.classList.contains('open') && !panel.contains(e.target) && !bell.contains(e.target)) {
+      panel.classList.remove('open');
+    }
+  });
 </script>
 </body>
 </html>

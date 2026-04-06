@@ -118,6 +118,23 @@ export async function getStorageStats() {
 
 // ── Value helpers ─────────────────────────────────────────────────────────────
 
+/**
+ * Parse a potentially-formatted number string.
+ * Handles European comma decimal separator (e.g. "1.234,56" → 1234.56 is NOT supported,
+ * but "1234,56" → 1234.56 is). Strips non-numeric characters except digits, dots and commas.
+ * Returns 0 for empty, null, undefined or non-numeric inputs.
+ */
+export function parseNum(v) {
+  return parseFloat(String(v||'').replace(/[^0-9.,]/g,'').replace(',','.')) || 0;
+}
+
+/** Days elapsed between a YYYY-MM-DD date string and a reference date (default: today). */
+export function daysDiff(dateStr, refDate) {
+  if (!dateStr) return Infinity;
+  const ref = refDate || new Date();
+  return Math.floor((ref - new Date(dateStr + 'T12:00:00')) / 86400000);
+}
+
 /** Return YYYY-MM-DD for a Date using *local* timezone (avoids UTC shift from toISOString). */
 export function localDateStr(d) {
   if (!d) d = new Date();
