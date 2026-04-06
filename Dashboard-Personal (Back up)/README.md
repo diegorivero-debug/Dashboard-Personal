@@ -1,5 +1,22 @@
 # 📊 Dashboard Personal — Apple Passeig de Gràcia
 
+## 🚀 Instalación en otro Mac
+
+Instala el dashboard en cualquier Mac como una app nativa — sin Terminal, sin dependencias.
+
+1. En el **Mac de desarrollo**, doble clic en **`crear-instalador.command`**
+2. Se genera **`dist/Panel APG.dmg`** (se abre automáticamente en Finder)
+3. Copia el `.dmg` al Mac de trabajo (AirDrop, USB, etc.)
+4. Abre el `.dmg` y arrastra **"Panel APG"** a **Aplicaciones**
+5. Abre **Panel APG** desde Launchpad o el Dock
+6. ✅ Listo — el dashboard se abrirá automáticamente cada vez que enciendas el Mac
+
+> **Requisito:** Python 3 debe estar instalado en el Mac de trabajo (viene preinstalado en macOS 12.3+).
+
+Para desinstalar completamente: doble clic en **`desinstalar-panel-apg.command`**
+
+---
+
 ## 🚀 Instalación permanente (recomendado)
 
 Para que el icono del Dock funcione directamente sin abrir Terminal:
