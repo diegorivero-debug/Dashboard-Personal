@@ -560,54 +560,28 @@ function updateYoWBadges() {
     if(yoyBadge) yoyBadge.innerHTML = calcTrendBadge(aVal, _g(yoyId));
     if(wowBadge) wowBadge.innerHTML = calcTrendBadge(aVal, _g(wowId));
   });
-  // Mirror badges for critical KPIs in group cards
-  const copyBadge = (srcId, dstId) => {
-    const src = document.getElementById(srcId), dst = document.getElementById(dstId);
-    if(src && dst) dst.innerHTML = src.innerHTML;
-  };
-  copyBadge('badge-yoy-ventas', 'mirror-badge-yoy-ventas');
-  copyBadge('badge-wow-ventas', 'mirror-badge-wow-ventas');
-  copyBadge('badge-yoy-nps',    'mirror-badge-yoy-nps');
-  copyBadge('badge-wow-nps',    'mirror-badge-wow-nps');
 }
 
 function refreshProgressBars() {
-  // ── Critical KPIs ──
+  // ── Ventas Globales ──
   setBar('bar-ventas','pct-ventas', _g('kpi-ventas'), _g('kpi-obj-ventas'));
-  setBar('bar-nps',   'pct-nps',   _g('kpi-nps'),    _g('kpi-obj-nps'));
-  setBar('bar-dta',   'pct-dta',   _g('kpi-dta'),    _g('kpi-obj-dta'));
-  // ── Group 1 ──
   setBar('bar-ventas-business','pct-ventas-business', _g('kpi-ventas-business'), _g('kpi-obj-ventas-business'));
   setBar('bar-ventas-apu',     'pct-ventas-apu',      _g('kpi-ventas-apu'),      _g('kpi-obj-ventas-apu'));
   setBar('bar-ventas-sfs',     'pct-ventas-sfs',      _g('kpi-ventas-sfs'),      _g('kpi-obj-ventas-sfs'));
-  // ── Group 2 ──
-  setBar('bar-nps-shopping','pct-nps-shopping', _g('kpi-nps-shopping'), _g('kpi-obj-nps-shopping'));
-  setBar('bar-nps-apu',     'pct-nps-apu',      _g('kpi-nps-apu'),      _g('kpi-obj-nps-apu'));
-  setBar('bar-nps-support', 'pct-nps-support',  _g('kpi-nps-support'),  _g('kpi-obj-nps-support'));
-  setBar('bar-nps-taa',     'pct-nps-taa',      _g('kpi-nps-taa'),      _g('kpi-obj-nps-taa'));
-  // ── Group 3 ──
-  setBar('bar-trafico','pct-trafico', _g('kpi-trafico'), _g('kpi-obj-trafico'));
+  // ── Product Zone ──
   setBar('bar-conv',   'pct-conv',    _g('kpi-conv'),    _g('kpi-obj-conv'));
-  // ── Mirror cards (Ventas Totales in Group 1) ──
-  const venV = _g('kpi-ventas'), venO = _g('kpi-obj-ventas');
-  const mv = document.getElementById('mirror-ventas');
-  const mo = document.getElementById('mirror-obj-ventas');
-  if(mv) mv.textContent = venV || '—';
-  if(mo) mo.textContent = venO || '—';
-  setBar('mirror-bar-ventas', 'mirror-pct-ventas', venV, venO);
-  // ── Mirror cards (NPS Tienda in Group 2) ──
-  const npsV = _g('kpi-nps'), npsO = _g('kpi-obj-nps');
-  const mn = document.getElementById('mirror-nps');
-  const mno = document.getElementById('mirror-obj-nps');
-  if(mn) mn.textContent = npsV || '—';
-  if(mno) mno.textContent = npsO || '—';
-  setBar('mirror-bar-nps', 'mirror-pct-nps', npsV, npsO);
-  // ── Mirror cards (DTA in Group 4) ──
-  const dtaV = _g('kpi-dta'), dtaO = _g('kpi-obj-dta');
-  const md = document.getElementById('mirror-dta');
-  const mdo = document.getElementById('mirror-obj-dta');
-  if(md) md.textContent = dtaV || '—';
-  if(mdo) mdo.textContent = dtaO || '—';
+  setBar('bar-trafico','pct-trafico', _g('kpi-trafico'), _g('kpi-obj-trafico'));
+  setBar('bar-upt',    'pct-upt',     _g('kpi-upt'),     _g('kpi-obj-upt'));
+  setBar('bar-intros-1k','pct-intros-1k', _g('kpi-intros-1k'), _g('kpi-obj-intros-1k'));
+  // ── Genius Bar ──
+  setBar('bar-dta',        'pct-dta',        _g('kpi-dta'),        _g('kpi-obj-dta'));
+  setBar('bar-iphone-tat', 'pct-iphone-tat', _g('kpi-iphone-tat'), _g('kpi-obj-iphone-tat'));
+  setBar('bar-nps-support','pct-nps-support', _g('kpi-nps-support'), _g('kpi-obj-nps-support'));
+  setBar('bar-nps-apu',    'pct-nps-apu',     _g('kpi-nps-apu'),     _g('kpi-obj-nps-apu'));
+  // ── Experiencia de Cliente ──
+  setBar('bar-nps',         'pct-nps',         _g('kpi-nps'),         _g('kpi-obj-nps'));
+  setBar('bar-nps-shopping','pct-nps-shopping', _g('kpi-nps-shopping'), _g('kpi-obj-nps-shopping'));
+  setBar('bar-nps-taa',     'pct-nps-taa',      _g('kpi-nps-taa'),      _g('kpi-obj-nps-taa'));
   // ── YoY/WoW badges ──
   updateYoWBadges();
   try { checkKPIAlerts(); } catch(e) {}
@@ -1554,7 +1528,6 @@ function saveKPISnapshot() {
   history = history.filter(s=>s.date!==today); // only one snapshot per day
   history.push({
     date: today,
-    context: document.getElementById('kpi-week-context')?.value.trim() || '',  /* K1 */
     ventas: _g('kpi-ventas'),      objVentas: _g('kpi-obj-ventas'),
     nps:    _g('kpi-nps'),          objNps:    _g('kpi-obj-nps'),
     conv:   _g('kpi-conv'),         objConv:   _g('kpi-obj-conv'),
@@ -4257,91 +4230,6 @@ function kanbanSaveNote(colId, val) {
 }
 
 /* ═══════════════════════════════════════════════
-   FEATURE 11 — COMPARATIVA SEMANAL
-═══════════════════════════════════════════════ */
-function toggleComparativa() {
-  const body=document.getElementById('comparativa-body');
-  const icon=document.getElementById('comparativa-toggle-icon');
-  if(!body) return;
-  const open=body.style.display==='none';
-  body.style.display=open?'block':'none';
-  if(icon) icon.textContent=open?'▲':'▼';
-  save(K.comparativaOpen, open);
-  if(open) renderComparativa();
-}
-function getSelectedComparativaMetrics() {
-  const saved = load('apg_comparativa_metrics', DEFAULT_COMPARATIVA_METRICS);
-  return Array.isArray(saved) ? saved : DEFAULT_COMPARATIVA_METRICS;
-}
-
-function toggleComparativaMetric(key, btn) {
-  let selected = getSelectedComparativaMetrics();
-  if (selected.includes(key)) {
-    if (selected.length <= 1) { showToast('Al menos una métrica debe estar seleccionada'); return; }
-    selected = selected.filter(k => k !== key);
-    if (btn) btn.classList.remove('active');
-  } else {
-    if (selected.length >= 5) { showToast('Máximo 5 métricas simultáneas'); return; }
-    selected.push(key);
-    if (btn) btn.classList.add('active');
-  }
-  save('apg_comparativa_metrics', selected);
-  renderComparativa();
-}
-
-function renderComparativaSelector() {
-  const wrap = document.getElementById('comparativa-metric-selector');
-  if (!wrap) return;
-  const selected = getSelectedComparativaMetrics();
-  wrap.innerHTML = KPI_CHART_METRICS.map(m =>
-    `<button class="kpi-metric-pill${selected.includes(m.key)?' active':''}" data-metric="${m.key}" onclick="toggleComparativaMetric('${m.key}',this)" style="--mc:${m.color}">${m.label}</button>`
-  ).join('');
-}
-
-function renderComparativa() {
-  const wrap=document.getElementById('comparativa-table-wrap'); if(!wrap) return;
-  renderComparativaSelector();
-  const history=load(K.kpiHistory,[]);
-  if(!history.length){ wrap.innerHTML='<div class="briefing-empty" style="padding:12px 0">No hay datos históricos aún.</div>'; return; }
-
-  const current=history[history.length-1];
-  const prevWeek=history.length>7?history[history.length-8]:null;
-  const yearAgo=history.length>364?history[history.length-365]:null;
-
-  const selectedKeys = getSelectedComparativaMetrics();
-  const rows = KPI_CHART_METRICS
-    .filter(m => selectedKeys.includes(m.key))
-    .map(m => ({ label: m.label, key: m.key }));
-
-  const cell=(cur,prev)=>{
-    if(!cur||cur==='—') return '<td>—</td>';
-    const cn=num(cur), pn=prev?num(prev):null;
-    let arrow='';
-    if(pn!==null && pn!==0){
-      const diff=((cn-pn)/pn*100).toFixed(1);
-      if(cn>pn) arrow=`<span class="comp-arrow-up">▲ ${diff}%</span>`;
-      else if(cn<pn) arrow=`<span class="comp-arrow-down">▼ ${Math.abs(diff)}%</span>`;
-    }
-    return `<td>${esc(cur)}${arrow}</td>`;
-  };
-
-  wrap.innerHTML=`<table class="comparativa-table">
-    <thead><tr>
-      <th>Indicador</th>
-      <th>Esta semana</th>
-      <th>Semana anterior</th>
-      <th>Mismo periodo año ant.</th>
-    </tr></thead>
-    <tbody>${rows.map(r=>`<tr>
-      <td>${r.label}</td>
-      ${cell(current[r.key], null)}
-      ${prevWeek?cell(prevWeek[r.key], current[r.key]):'<td>—</td>'}
-      ${yearAgo?cell(yearAgo[r.key], current[r.key]):'<td>—</td>'}
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
-
-/* ═══════════════════════════════════════════════
    FEATURE 12 — NOTIFICATIONS
 ═══════════════════════════════════════════════ */
 function getAlerts() {
@@ -4678,44 +4566,6 @@ function setAccentTheme(name) {
   if(saved && ACCENT_THEMES[saved]) setAccentTheme(saved);
 })();
 
-/* ── Feature 7: Recap Semanal — compartir resumen automatizado ── */
-function shareRecapSemanal() {
-  const today = new Date().toISOString().split('T')[0];
-  const context = document.getElementById('kpi-week-context')?.value.trim() || '';
-  const notes   = document.getElementById('kpi-notes')?.value.trim() || '';
-
-  const ventas    = _g('kpi-ventas');   const objVentas = _g('kpi-obj-ventas');
-  const nps       = _g('kpi-nps');      const objNps    = _g('kpi-obj-nps');
-  const conv      = _g('kpi-conv');     const objConv   = _g('kpi-obj-conv');
-  const dta       = _g('kpi-dta');      const objDta    = _g('kpi-obj-dta');
-  const trafico   = _g('kpi-trafico');
-
-  const pct = (v, o) => {
-    const vn = num(v), on = num(o);
-    return on > 0 ? Math.round(vn / on * 100) + '%' : '—';
-  };
-  const line = (label, val, obj) => obj && obj !== '0' && obj !== '0 €'
-    ? `  ${label}: ${val} / obj ${obj} (${pct(val, obj)})`
-    : `  ${label}: ${val}`;
-
-  const week = fmtDate(today);
-  let text = `📋 RECAP SEMANAL — ${week}\n`;
-  if (context) text += `📝 ${context}\n`;
-  text += `\n📊 KPIs principales:\n`;
-  text += line('💰 Ventas',     ventas,  objVentas) + '\n';
-  text += line('⭐ NPS',        nps,     objNps)    + '\n';
-  text += line('📈 Conversión', conv,    objConv)   + '\n';
-  text += line('⏰ DTA',        dta,     objDta)    + '\n';
-  if (trafico && trafico !== '0') text += `  👣 Tráfico: ${trafico}\n`;
-  if (notes) text += `\n📝 Notas:\n${notes}\n`;
-
-  // Auto-save snapshot so history is always up-to-date when sharing
-  saveKPISnapshot();
-
-  navigator.clipboard.writeText(text)
-    .then(() => showToast('📋 Recap copiado al portapapeles'))
-    .catch(() => { prompt('Copia el recap:', text); });
-}
 function closeSnapshotBanner() {
   const b=document.getElementById('snapshot-banner'); if(b) b.style.display='none';
   const c=document.getElementById('snapshot-card'); if(c) c.style.display='none';

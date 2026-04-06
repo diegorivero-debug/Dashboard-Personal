@@ -231,8 +231,6 @@
       </div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:30px;flex-wrap:wrap">
         <span class="saved-flash" id="kpi-saved">✓ Guardado</span>
-        <input class="task-input" id="kpi-week-context" placeholder="📝 Contexto de la semana (ej: Lanzamiento iPhone 16, Back to School...)" style="min-width:260px;flex:1">
-        <button class="btn btn-primary" onclick="shareRecapSemanal()" style="font-size:13px">📋 Recap Semanal</button>
       </div>
     </div>
 
@@ -258,8 +256,6 @@
     </div>
 
     <!-- Hidden compatibility inputs used by saveKPIs / checkKPIAlerts / saveKPISnapshot -->
-    <input type="hidden" id="kpi-upt"      value="0">
-    <input type="hidden" id="kpi-obj-upt"  value="1.5">
     <input type="hidden" id="kpi-ac"       value="0%">
     <input type="hidden" id="kpi-acc"      value="0%">
     <input type="hidden" id="kpi-clicount" value="0">
@@ -270,12 +266,12 @@
     <!-- KPI Smart Insights — auto-generated analysis -->
     <div id="kpi-smart-insights" style="margin-bottom:18px"></div>
 
-    <!-- ⭐ KPIs CRÍTICOS -->
+    <!-- ══════════════ 💰 VENTAS GLOBALES ══════════════ -->
     <div class="kpi-group">
-      <div class="kpi-group-header">⭐ KPIs Críticos</div>
-      <div class="kpi-critical-grid">
+      <div class="kpi-group-header">💰 Ventas Globales</div>
+      <div class="grid-4">
 
-        <!-- 1. Ventas Totales (original IDs: kpi-ventas / kpi-obj-ventas) -->
+        <!-- Ventas Totales -->
         <div class="card kpi-critical-card">
           <div class="card-title">💰 Ventas Totales</div>
           <input class="kpi-editable" id="kpi-ventas" value="0 €" oninput="saveKPIs()">
@@ -285,61 +281,10 @@
             <div class="progress-bar"><div class="progress-fill green" id="bar-ventas" style="width:0%"></div></div>
           </div>
           <div class="kpi-yow-row">
-            <span class="kpi-yow-label">Año anterior: <input class="kpi-yow-input" id="kpi-yoy-ventas" placeholder="—" oninput="saveKPIs()"></span>
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-ventas" placeholder="—" oninput="saveKPIs()"></span>
             <span id="badge-yoy-ventas"></span>
-            <span class="kpi-yow-label">Semana ant.: <input class="kpi-yow-input" id="kpi-wow-ventas" placeholder="—" oninput="saveKPIs()"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-ventas" placeholder="—" oninput="saveKPIs()"></span>
             <span id="badge-wow-ventas"></span>
-          </div>
-        </div>
-
-        <!-- 2. NPS Tienda (original IDs: kpi-nps / kpi-obj-nps) -->
-        <div class="card kpi-critical-card">
-          <div class="card-title">⭐ NPS Tienda</div>
-          <input class="kpi-editable" id="kpi-nps" value="0" oninput="saveKPIs()">
-          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps" value="70" oninput="saveKPIs()"></div>
-          <div class="progress-wrap">
-            <div class="progress-label"><span>Progreso</span><span id="pct-nps">0%</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="bar-nps" style="width:0%"></div></div>
-          </div>
-          <div class="kpi-yow-row">
-            <span class="kpi-yow-label">Año anterior: <input class="kpi-yow-input" id="kpi-yoy-nps" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-yoy-nps"></span>
-            <span class="kpi-yow-label">Semana ant.: <input class="kpi-yow-input" id="kpi-wow-nps" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-wow-nps"></span>
-          </div>
-        </div>
-
-        <!-- 3. DTA Horas (new IDs: kpi-dta / kpi-obj-dta — operacional, sin YoY/WoW) -->
-        <div class="card kpi-critical-card">
-          <div class="card-title">⏰ DTA Horas</div>
-          <input class="kpi-editable" id="kpi-dta" value="0" oninput="saveKPIs()">
-          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-dta" value="0" oninput="saveKPIs()"></div>
-          <div class="progress-wrap">
-            <div class="progress-label"><span>Progreso</span><span id="pct-dta">0%</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="bar-dta" style="width:0%"></div></div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- GRUPO 1 — Ventas (4 KPIs) -->
-    <div class="kpi-group">
-      <div class="kpi-group-header">💰 Grupo 1 — Ventas</div>
-      <div class="grid-4">
-
-        <!-- Ventas Totales — mirror display (inputs live in Critical section above) -->
-        <div class="card kpi-mirror-card">
-          <div class="card-title">💰 Ventas Totales <span class="kpi-ref-badge">↑ crítico</span></div>
-          <div class="kpi-editable" style="font-size:28px;cursor:default" id="mirror-ventas">—</div>
-          <div class="kpi-label">Obj: <span id="mirror-obj-ventas">—</span></div>
-          <div class="progress-wrap">
-            <div class="progress-label"><span>Progreso</span><span id="mirror-pct-ventas">0%</span></div>
-            <div class="progress-bar"><div class="progress-fill green" id="mirror-bar-ventas" style="width:0%"></div></div>
-          </div>
-          <div class="kpi-yow-row" style="padding-top:8px;margin-top:8px">
-            <span id="mirror-badge-yoy-ventas"></span><span style="font-size:10px;color:var(--text-secondary)">YoY</span>
-            <span id="mirror-badge-wow-ventas"></span><span style="font-size:10px;color:var(--text-secondary)">WoW</span>
           </div>
         </div>
 
@@ -397,57 +342,94 @@
       </div>
     </div>
 
-    <!-- GRUPO 2 — NPS (5 métricas) -->
+    <!-- ══════════════ 📱 PRODUCT ZONE ══════════════ -->
     <div class="kpi-group">
-      <div class="kpi-group-header">⭐ Grupo 2 — NPS</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div class="kpi-group-header">📱 Product Zone</div>
+      <div class="grid-4">
 
-        <!-- NPS Tienda — mirror display (inputs live in Critical section above) -->
-        <div class="card kpi-mirror-card">
-          <div class="card-title">⭐ NPS Tienda <span class="kpi-ref-badge">↑ crítico</span></div>
-          <div class="kpi-editable" style="font-size:28px;cursor:default" id="mirror-nps">—</div>
-          <div class="kpi-label">Obj: <span id="mirror-obj-nps">—</span></div>
+        <!-- Conversión -->
+        <div class="card">
+          <div class="card-title">🔄 Conversión</div>
+          <input class="kpi-editable" id="kpi-conv" value="0%" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-conv" value="30%" oninput="saveKPIs()"></div>
           <div class="progress-wrap">
-            <div class="progress-label"><span>Progreso</span><span id="mirror-pct-nps">0%</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="mirror-bar-nps" style="width:0%"></div></div>
+            <div class="progress-label"><span>Progreso</span><span id="pct-conv">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill orange" id="bar-conv" style="width:0%"></div></div>
           </div>
-          <div class="kpi-yow-row" style="padding-top:8px;margin-top:8px">
-            <span id="mirror-badge-yoy-nps"></span><span style="font-size:10px;color:var(--text-secondary)">YoY</span>
-            <span id="mirror-badge-wow-nps"></span><span style="font-size:10px;color:var(--text-secondary)">WoW</span>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-conv" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-conv"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-conv" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-conv"></span>
           </div>
         </div>
 
-        <!-- NPS Shopping -->
+        <!-- Tráfico -->
         <div class="card">
-          <div class="card-title">🛍️ NPS Shopping</div>
-          <input class="kpi-editable" id="kpi-nps-shopping" value="0" oninput="saveKPIs()">
-          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps-shopping" value="70" oninput="saveKPIs()"></div>
+          <div class="card-title">👣 Tráfico</div>
+          <input class="kpi-editable" id="kpi-trafico" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-trafico" value="0" oninput="saveKPIs()"></div>
           <div class="progress-wrap">
-            <div class="progress-label"><span>Progreso</span><span id="pct-nps-shopping">0%</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="bar-nps-shopping" style="width:0%"></div></div>
+            <div class="progress-label"><span>Progreso</span><span id="pct-trafico">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-trafico" style="width:0%"></div></div>
           </div>
           <div class="kpi-yow-row">
-            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps-shopping" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-yoy-nps-shopping"></span>
-            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps-shopping" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-wow-nps-shopping"></span>
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-trafico" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-trafico"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-trafico" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-trafico"></span>
           </div>
         </div>
 
-        <!-- NPS APU -->
+        <!-- UPT -->
         <div class="card">
-          <div class="card-title">🔧 NPS APU</div>
-          <input class="kpi-editable" id="kpi-nps-apu" value="0" oninput="saveKPIs()">
-          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps-apu" value="70" oninput="saveKPIs()"></div>
+          <div class="card-title">🛒 UPT</div>
+          <input class="kpi-editable" id="kpi-upt" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-upt" value="1.5" oninput="saveKPIs()"></div>
           <div class="progress-wrap">
-            <div class="progress-label"><span>Progreso</span><span id="pct-nps-apu">0%</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="bar-nps-apu" style="width:0%"></div></div>
+            <div class="progress-label"><span>Progreso</span><span id="pct-upt">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-upt" style="width:0%"></div></div>
           </div>
-          <div class="kpi-yow-row">
-            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps-apu" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-yoy-nps-apu"></span>
-            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps-apu" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-wow-nps-apu"></span>
+        </div>
+
+        <!-- Intros / 1K -->
+        <div class="card">
+          <div class="card-title">🎯 Intros / 1K</div>
+          <input class="kpi-editable" id="kpi-intros-1k" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-intros-1k" value="0" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-intros-1k">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-intros-1k" style="width:0%"></div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════ 🔧 GENIUS BAR ══════════════ -->
+    <div class="kpi-group">
+      <div class="kpi-group-header">🔧 Genius Bar</div>
+      <div class="grid-4">
+
+        <!-- DTA Horas -->
+        <div class="card">
+          <div class="card-title">⏰ DTA Horas</div>
+          <input class="kpi-editable" id="kpi-dta" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-dta" value="0" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-dta">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-dta" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <!-- iPhone TAT -->
+        <div class="card">
+          <div class="card-title">📱 iPhone TAT días</div>
+          <input class="kpi-editable" id="kpi-iphone-tat" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-iphone-tat" value="0" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-iphone-tat">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-iphone-tat" style="width:0%"></div></div>
           </div>
         </div>
 
@@ -468,78 +450,30 @@
           </div>
         </div>
 
-        <!-- NPS T@A -->
+        <!-- NPS APU -->
         <div class="card">
-          <div class="card-title">🎓 NPS T@A</div>
-          <input class="kpi-editable" id="kpi-nps-taa" value="0" oninput="saveKPIs()">
-          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps-taa" value="70" oninput="saveKPIs()"></div>
+          <div class="card-title">🔧 NPS APU</div>
+          <input class="kpi-editable" id="kpi-nps-apu" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps-apu" value="70" oninput="saveKPIs()"></div>
           <div class="progress-wrap">
-            <div class="progress-label"><span>Progreso</span><span id="pct-nps-taa">0%</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="bar-nps-taa" style="width:0%"></div></div>
+            <div class="progress-label"><span>Progreso</span><span id="pct-nps-apu">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-nps-apu" style="width:0%"></div></div>
           </div>
           <div class="kpi-yow-row">
-            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps-taa" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-yoy-nps-taa"></span>
-            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps-taa" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-wow-nps-taa"></span>
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps-apu" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-nps-apu"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps-apu" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-nps-apu"></span>
           </div>
         </div>
 
       </div>
     </div>
 
-    <!-- GRUPO 3 — Tráfico y Conversión (2 KPIs) -->
+    <!-- ══════════════ 🗂️ OPERACIONES ══════════════ -->
     <div class="kpi-group">
-      <div class="kpi-group-header">👣 Grupo 3 — Tráfico y Conversión</div>
-      <div class="grid-2">
-
-        <!-- Tráfico -->
-        <div class="card">
-          <div class="card-title">👣 Tráfico</div>
-          <input class="kpi-editable" id="kpi-trafico" value="0" oninput="saveKPIs()">
-          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-trafico" value="0" oninput="saveKPIs()"></div>
-          <div class="progress-wrap">
-            <div class="progress-label"><span>Progreso</span><span id="pct-trafico">0%</span></div>
-            <div class="progress-bar"><div class="progress-fill" id="bar-trafico" style="width:0%"></div></div>
-          </div>
-          <div class="kpi-yow-row">
-            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-trafico" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-yoy-trafico"></span>
-            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-trafico" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-wow-trafico"></span>
-          </div>
-        </div>
-
-        <!-- Conversión (original IDs: kpi-conv / kpi-obj-conv) -->
-        <div class="card">
-          <div class="card-title">🔄 Conversión</div>
-          <input class="kpi-editable" id="kpi-conv" value="0%" oninput="saveKPIs()">
-          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-conv" value="30%" oninput="saveKPIs()"></div>
-          <div class="progress-wrap">
-            <div class="progress-label"><span>Progreso</span><span id="pct-conv">0%</span></div>
-            <div class="progress-bar"><div class="progress-fill orange" id="bar-conv" style="width:0%"></div></div>
-          </div>
-          <div class="kpi-yow-row">
-            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-conv" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-yoy-conv"></span>
-            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-conv" placeholder="—" oninput="saveKPIs()"></span>
-            <span id="badge-wow-conv"></span>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- GRUPO 4 — KPIs Operacionales (7 KPIs, compact, sin YoY/WoW) -->
-    <div class="kpi-group">
-      <div class="kpi-group-header">🎯 Grupo 4 — KPIs Operacionales</div>
+      <div class="kpi-group-header">🗂️ Operaciones</div>
       <div class="kpi-compact-grid">
-
-        <div class="card kpi-compact-card">
-          <div class="card-title">🎯 Intros / 1K</div>
-          <input class="kpi-editable kpi-editable-sm" id="kpi-intros-1k" value="0" oninput="saveKPIs()">
-          <div class="kpi-label" style="margin-top:6px">Obj: <input class="kpi-obj-input" id="kpi-obj-intros-1k" value="0" oninput="saveKPIs()"></div>
-        </div>
 
         <div class="card kpi-compact-card">
           <div class="card-title">⏱️ Timely %</div>
@@ -565,17 +499,63 @@
           <div class="kpi-label" style="margin-top:6px">Obj: <input class="kpi-obj-input" id="kpi-obj-intros-sessions" value="0" oninput="saveKPIs()"></div>
         </div>
 
-        <!-- DTA Horas — mirror display (inputs live in Critical section above) -->
-        <div class="card kpi-compact-card kpi-mirror-card">
-          <div class="card-title">⏰ DTA Horas <span class="kpi-ref-badge">↑ crítico</span></div>
-          <div class="kpi-editable kpi-editable-sm" style="cursor:default" id="mirror-dta">—</div>
-          <div class="kpi-label">Obj: <span id="mirror-obj-dta">—</span></div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 🌟 EXPERIENCIA DE CLIENTE ══════════════ -->
+    <div class="kpi-group">
+      <div class="kpi-group-header">🌟 Experiencia de Cliente</div>
+      <div class="grid-4">
+
+        <!-- NPS Tienda -->
+        <div class="card kpi-critical-card">
+          <div class="card-title">⭐ NPS Tienda</div>
+          <input class="kpi-editable" id="kpi-nps" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps" value="70" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-nps">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-nps" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-nps"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-nps"></span>
+          </div>
         </div>
 
-        <div class="card kpi-compact-card">
-          <div class="card-title">📱 iPhone TAT días</div>
-          <input class="kpi-editable kpi-editable-sm" id="kpi-iphone-tat" value="0" oninput="saveKPIs()">
-          <div class="kpi-label" style="margin-top:6px">Obj: <input class="kpi-obj-input" id="kpi-obj-iphone-tat" value="0" oninput="saveKPIs()"></div>
+        <!-- NPS Shopping -->
+        <div class="card">
+          <div class="card-title">🛍️ NPS Shopping</div>
+          <input class="kpi-editable" id="kpi-nps-shopping" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps-shopping" value="70" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-nps-shopping">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-nps-shopping" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps-shopping" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-nps-shopping"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps-shopping" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-nps-shopping"></span>
+          </div>
+        </div>
+
+        <!-- NPS T@A -->
+        <div class="card">
+          <div class="card-title">🎓 NPS T@A</div>
+          <input class="kpi-editable" id="kpi-nps-taa" value="0" oninput="saveKPIs()">
+          <div class="kpi-label" style="margin-top:6px">Objetivo: <input class="kpi-obj-input" id="kpi-obj-nps-taa" value="70" oninput="saveKPIs()"></div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Progreso</span><span id="pct-nps-taa">0%</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="bar-nps-taa" style="width:0%"></div></div>
+          </div>
+          <div class="kpi-yow-row">
+            <span class="kpi-yow-label">Año ant.: <input class="kpi-yow-input" id="kpi-yoy-nps-taa" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-yoy-nps-taa"></span>
+            <span class="kpi-yow-label">Sem. ant.: <input class="kpi-yow-input" id="kpi-wow-nps-taa" placeholder="—" oninput="saveKPIs()"></span>
+            <span id="badge-wow-nps-taa"></span>
+          </div>
         </div>
 
       </div>
@@ -588,7 +568,7 @@
       <div id="commitments-kpis-mirror-content" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div>
     </div>
 
-    <!-- Histórico — debajo de Commitments KPIs para coherencia visual -->
+    <!-- Histórico -->
     <div class="card section-gap" id="kpi-history-section">
       <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleHistorico()">
         <div class="card-title" style="margin-bottom:0">📈 Histórico</div>
@@ -610,54 +590,8 @@
         <div id="kpi-history-table-wrap"></div>
         <div class="empty-state" id="kpi-history-empty" style="padding:24px 0">
           <div class="empty-state-icon">📊</div>
-          <p>Aún no hay datos. Guarda el primer recap semanal con el botón de arriba.</p>
+          <p>Aún no hay datos históricos. Guarda un snapshot semanal para comenzar.</p>
         </div>
-      </div>
-    </div>
-
-    <!-- ══════════════ KPI TREND CHARTS (Chart.js) ══════════════ -->
-    <div class="card section-gap" id="kpi-trend-charts-card">
-      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
-        <h3>📈 Tendencias de KPIs</h3>
-        <div class="kpi-trend-view-pills" id="kpi-trend-view-pills">
-          <button class="kpi-trend-pill active" data-view="4w" onclick="setTrendView('4w', this)">4 semanas</button>
-          <button class="kpi-trend-pill" data-view="quarter" onclick="setTrendView('quarter', this)">Quarter</button>
-          <button class="kpi-trend-pill" data-view="all" onclick="setTrendView('all', this)">Todo</button>
-        </div>
-      </div>
-      <div id="kpi-trend-metrics-selector" class="kpi-trend-metrics"></div>
-      <div id="kpi-trend-chart-container" class="chart-container" style="height:300px">
-        <canvas id="kpi-trend-canvas"></canvas>
-      </div>
-    </div>
-
-    <div class="card section-gap" id="kpi-comparison-card">
-      <h3>📊 Comparativa semanal (Chart.js)</h3>
-      <div id="kpi-comparison-chart-container" class="chart-container" style="height:250px">
-        <canvas id="kpi-comparison-canvas"></canvas>
-      </div>
-    </div>
-
-    <div class="card section-gap" id="kpi-quarter-progress-card">
-      <h3>🎯 Progreso del Quarter</h3>
-      <div id="kpi-quarter-progress-container" class="chart-container" style="height:200px">
-        <canvas id="kpi-quarter-canvas"></canvas>
-      </div>
-    </div>
-
-    <!-- Comparativa semanal — debajo del Histórico -->
-    <div class="card section-gap" id="comparativa-section">
-      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleComparativa()">
-        <div class="card-title" style="margin-bottom:0">📊 Comparativa semanal</div>
-        <span id="comparativa-toggle-icon">▼</span>
-      </div>
-      <div id="comparativa-body" style="display:none;margin-top:14px">
-        <!-- Selector dinámico de métricas para comparativa (hasta 5 simultáneas) -->
-        <div class="kpi-metric-selector-wrap">
-          <div class="kpi-metric-selector-label">Métricas a mostrar <span class="kpi-metric-hint">(hasta 5)</span></div>
-          <div class="kpi-metric-selector" id="comparativa-metric-selector"></div>
-        </div>
-        <div id="comparativa-table-wrap"></div>
       </div>
     </div>
   </section>
@@ -2641,15 +2575,6 @@
 <script src="config.js" onerror="window._configMissing = true"></script>
 <script src="commitments-data.js"></script>
 <script src="dashboard.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" crossorigin="anonymous" onerror="console.warn('Chart.js no pudo cargarse. Los gráficos Chart.js no estarán disponibles.')"></script>
-<script type="module">
-  import { initKPICharts } from './js/modules/kpi-charts.js';
-  if (window.Chart) {
-    initKPICharts();
-  } else {
-    window.addEventListener('load', () => initKPICharts());
-  }
-</script>
 <script type="module">
   import { initOKRs } from './js/modules/okrs.js';
   initOKRs();
