@@ -2725,5 +2725,16 @@
   import { initWeeklyReport } from './js/modules/weekly-report.js';
   initWeeklyReport();
 </script>
+<script type="module">
+  /* Load tabs.js and notifications.js as modules so they expose their
+     enhanced implementations to window.* (overriding the older versions
+     in dashboard.js, since ES modules execute after regular scripts). */
+  import { initGroupFromURL, updateNavTabsScrollIndicators } from './js/ui/tabs.js';
+  import './js/ui/notifications.js';
+  /* Re-render the active group using the tabs.js version (scroll indicators,
+     full 8-tab negocio group, etc.) and update the badge with richer alerts. */
+  initGroupFromURL();
+  window.updateNotifBadge?.();
+</script>
 </body>
 </html>

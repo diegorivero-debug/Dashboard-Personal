@@ -225,7 +225,7 @@ export function getAlertsForHome() {
   return _sortAlerts(alerts);
 }
 export function updateNotifBadge() {
-  const alerts=getAlerts();
+  const alerts=getAlertsForHome();
   const badge=document.getElementById('notif-badge');
   if(badge){
     if(alerts.length>0){ badge.style.display='flex'; badge.textContent=alerts.length; } else { badge.style.display='none'; }
@@ -238,17 +238,20 @@ export function toggleNotifications() {
 }
 export function renderNotifications() {
   const items=document.getElementById('notif-items'); if(!items) return;
-  const alerts=getAlerts();
+  const alerts=getAlertsForHome();
   updateNotifBadge();
   if(!alerts.length){
     items.innerHTML=`<div class="notif-empty">✅ Todo en orden<br><span style="font-size:12px;margin-top:4px;display:block">No hay alertas pendientes. ¡Buen trabajo!</span></div>`;
     return;
   }
-  items.innerHTML=alerts.map(a=>`<div class="notif-item">
+  items.innerHTML=alerts.map(a=>{
+    const btn=a.tab?`<button class="notif-go" onclick="switchTab('${a.tab}');document.getElementById('notif-panel').classList.remove('open')">Ver →</button>`:'';
+    return `<div class="notif-item">
     <div class="notif-icon">${a.icon}</div>
     <div class="notif-text">${esc(a.text)}</div>
-    <button class="notif-go" onclick="switchTab('${a.tab}');document.getElementById('notif-panel').classList.remove('open')">Ver →</button>
-  </div>`).join('');
+    ${btn}
+  </div>`;
+  }).join('');
 }
 
 const _TAB_URLS={
@@ -290,3 +293,9 @@ export function toggleNotificationsForHome() {
   const isOpen=panel.classList.toggle('open');
   if(isOpen) renderNotificationsForHome();
 }
+
+/* Expose to global scope so onclick="toggleNotifications()" works in dashboard.html
+   (modules execute after regular scripts, so these override any earlier definitions) */
+window.toggleNotifications = toggleNotifications;
+window.renderNotifications = renderNotifications;
+window.updateNotifBadge = updateNotifBadge;
