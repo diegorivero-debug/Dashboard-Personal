@@ -149,7 +149,7 @@ export function updateNavTabsScrollIndicators() {
   const arrowR  = document.getElementById('nav-tabs-arrow-right');
   if (!bar || !wrapper) return;
 
-  const hasOverflow = bar.scrollWidth > bar.clientWidth + 2; // +2 for rounding
+  const hasOverflow = bar.scrollWidth > bar.clientWidth + 2; // 2px buffer for sub-pixel rendering differences across browsers
   const atStart     = bar.scrollLeft <= 2;
   const atEnd       = bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 2;
 
