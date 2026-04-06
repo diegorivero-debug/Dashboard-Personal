@@ -877,7 +877,12 @@
   color: var(--text-secondary);
 }
 .kpi-yow-rows { display: flex; flex-direction: column; gap: 4px; }
-.kpi-extra-pct { font-size: 11px; color: var(--accent); font-weight: 500; }
+.kpi-inverse-indicator {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-left: 6px;
+}
+.kpi-extra-pct { font-size: 11px; color: var(--accent); font-weight: 500; margin-top: 2px; }
 .kpi-disp { font-size: 11px; color: var(--text-secondary); min-height: 14px; }
 .kpi-zone-section .kpi-group-header { margin-bottom: 10px; }
 

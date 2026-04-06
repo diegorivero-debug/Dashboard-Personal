@@ -787,7 +787,14 @@ function refreshProgressBars() {
         bar.style.background = pct >= 90 ? 'var(--success)' : pct >= 70 ? 'var(--warning,#ff9f0a)' : 'var(--danger)';
       }
     }
-    if (pctEl) pctEl.textContent = o > 0 && (!kpi.inverse || v > 0) ? Math.round(kpi.inverse ? o / v * 100 : v / o * 100) + '%' : '—';
+    if (pctEl) {
+      if (o > 0 && (!kpi.inverse || v > 0)) {
+        const rawPct = kpi.inverse ? Math.round(o / v * 100) : Math.round(v / o * 100);
+        pctEl.textContent = rawPct + '%';
+      } else {
+        pctEl.textContent = '—';
+      }
+    }
     if (kpi.extraPct) {
       const totalEl = document.getElementById('kv-' + kpi.extraPct);
       const dispEl = document.getElementById('kpct-extra-' + kpi.id);
@@ -2066,9 +2073,9 @@ function renderKPIPage() {
       const obj = d[kpi.id + '_obj'] || '';
       const wow = d[kpi.id + '_wow'] || '';
       const yoy = d[kpi.id + '_yoy'] || '';
-      const inverseLabel = kpi.inverse ? '<span style="font-size:10px;color:var(--text-secondary);margin-left:6px">↓=✓</span>' : '';
+      const inverseLabel = kpi.inverse ? '<span class="kpi-inverse-indicator">↓=✓</span>' : '';
       const extraPctHtml = kpi.extraPct
-        ? `<div class="kpi-extra-pct" id="kpct-extra-${kpi.id}" style="font-size:11px;color:var(--text-secondary);margin-top:2px"></div>`
+        ? `<div class="kpi-extra-pct" id="kpct-extra-${kpi.id}"></div>`
         : '';
       const wowRow = kpi.hasWoW ? `
         <div class="kpi-yow-row">
@@ -5629,23 +5636,25 @@ const KPI_CATALOG = [
 ];
 
 const KPI_ZONES = [
-  { id: 'ventas',  label: '💰 Ventas Globales',                       order: 1 },
-  { id: 'product', label: '📱 Product Zone',                          order: 2 },
-  { id: 'genius',  label: '🔧 Genius Bar',                            order: 3 },
-  { id: 'ops',     label: '🗂️ Operaciones',                           order: 4 },
-  { id: 'taa',     label: '🎓 T@A',                                   order: 5 },
-  { id: 'cx-pz',   label: '🌟 Experiencia de Cliente — Product Zone', order: 6 },
-  { id: 'cx-gb',   label: '🌟 Experiencia de Cliente — Genius Bar',   order: 7 },
-  { id: 'cx-taa',  label: '🌟 Experiencia de Cliente — T@A',          order: 8 },
+  { id: 'ventas',  label: '💰 Ventas Globales',                       order: 1, color: 'var(--accent)' },
+  { id: 'product', label: '📱 Product Zone',                          order: 2, color: '#30d158' },
+  { id: 'genius',  label: '🔧 Genius Bar',                            order: 3, color: '#0a84ff' },
+  { id: 'ops',     label: '🗂️ Operaciones',                           order: 4, color: '#5e5ce6' },
+  { id: 'taa',     label: '🎓 T@A',                                   order: 5, color: '#bf5af2' },
+  { id: 'cx-pz',   label: '🌟 Experiencia de Cliente — Product Zone', order: 6, color: '#ffd60a' },
+  { id: 'cx-gb',   label: '🌟 Experiencia de Cliente — Genius Bar',   order: 7, color: '#ff9f0a' },
+  { id: 'cx-taa',  label: '🌟 Experiencia de Cliente — T@A',          order: 8, color: '#64d2ff' },
 ];
 
 const KPI_HIGHLIGHTED = ['ventas-totales', 'ventas-apu', 'conversion', 'sdd-cp-usage', 'nps-apu'];
 
 /* Derived RESUMEN catalog — used by Mis KPIs selector and radar chart */
+const KPI_SHORT_LABEL_MAX = 14;
+
 const RESUMEN_KPI_CATALOG = KPI_CATALOG.map(k => ({
   key:    k.id,
   label:  k.icon + ' ' + k.label,
-  short:  k.label.length > 14 ? k.label.substring(0, 14) + '…' : k.label,
+  short:  k.label.length > KPI_SHORT_LABEL_MAX ? k.label.substring(0, KPI_SHORT_LABEL_MAX) + '…' : k.label,
   valKey: k.id,
   objKey: k.id + '_obj',
 }));
@@ -5653,15 +5662,15 @@ const RESUMEN_KPIS_KEY     = 'apg_resumen_kpis';
 const RESUMEN_KPIS_DEFAULT = KPI_HIGHLIGHTED.slice(0, 5);
 const MAX_RESUMEN_KPIS     = 5;
 
-function _kpiZoneColor(zone) {
-  const map = { ventas:'var(--accent)', product:'#30d158', genius:'#0a84ff', ops:'#5e5ce6', taa:'#bf5af2', 'cx-pz':'#ffd60a', 'cx-gb':'#ff9f0a', 'cx-taa':'#64d2ff' };
-  return map[zone] || 'var(--accent)';
+function kpiZoneColor(zone) {
+  const z = KPI_ZONES.find(zn => zn.id === zone);
+  return z ? z.color : 'var(--accent)';
 }
 const KPI_CHART_MAX_PCT = 150;
 const KPI_CHART_METRICS = KPI_CATALOG.filter(k => k.hasObj).map(k => ({
   key:   k.id,
   label: k.icon + ' ' + k.label,
-  color: _kpiZoneColor(k.zone),
+  color: kpiZoneColor(k.zone),
   val:   d => {
     const v = num(d[k.id]), o = num(d[k.id + '_obj']);
     if (k.inverse) return o > 0 && v > 0 ? Math.min(o / v * 100, KPI_CHART_MAX_PCT) : 0;
