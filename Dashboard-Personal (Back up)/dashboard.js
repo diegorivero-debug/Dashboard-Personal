@@ -526,7 +526,7 @@ function switchTab(name) {
   if (tabBtn) tabBtn.classList.add('active');
   if(name==='resumen')       { updateSummary(); checkAutoSuggestions(); renderResumenKPIs(); renderFocusMetricDisplay(); renderKPIStreakAlerts(); renderMissionControl(); renderRadarChart(); populateFocusMetricCommitmentsOptions?.(); }
   if(name==='routine')       renderRoutine();
-  if(name==='kpis')          { renderKPIStreakAlerts(); renderCommitmentsKPIsMirror(); }
+  if(name==='kpis')          { renderKPIPage(); renderKPIStreakAlerts(); renderCommitmentsKPIsMirror(); }
   if(name==='reuniones')     { renderReuniones(); updateReunionOriginSelect(); }
   if(name==='actas')         renderActas();
   if(name==='equipo')        { renderTeam(); renderRecogs(); updateRecogDropdown(); if(_recogView==='scoreboard') renderScoreboard(); }
@@ -657,99 +657,38 @@ function showToast(msg, type) {
 const _g = id => document.getElementById(id)?.value || '';
 let _saveKPIsTimer;
 function saveKPIs() {
-  // Actualizar barras de progreso inmediatamente (UX responsiva)
   refreshProgressBars();
-  // Debounce: solo persistir a localStorage tras 400ms sin cambios
   clearTimeout(_saveKPIsTimer);
   _saveKPIsTimer = setTimeout(() => {
-    save(K.kpis, {
-      // ── Original compatibility fields ──
-      ventas:    _g('kpi-ventas'),    objVentas: _g('kpi-obj-ventas'),
-      nps:       _g('kpi-nps'),       objNps:    _g('kpi-obj-nps'),
-      conv:      _g('kpi-conv'),      objConv:   _g('kpi-obj-conv'),
-      upt:       _g('kpi-upt'),       objUpt:    _g('kpi-obj-upt'),
-      acc:       _g('kpi-acc'),       ac:        _g('kpi-ac'),
-      clicount:  _g('kpi-clicount'),  notes:     _g('kpi-notes'),
-      // ── Critical KPIs — YoY/WoW ──
-      yoyVentas: _g('kpi-yoy-ventas'), wowVentas: _g('kpi-wow-ventas'),
-      yoyNps:    _g('kpi-yoy-nps'),    wowNps:    _g('kpi-wow-nps'),
-      // ── Group 1 — Ventas ──
-      ventasBusiness:    _g('kpi-ventas-business'),    objVentasBusiness: _g('kpi-obj-ventas-business'),
-      yoyVentasBusiness: _g('kpi-yoy-ventas-business'), wowVentasBusiness: _g('kpi-wow-ventas-business'),
-      ventasApu:    _g('kpi-ventas-apu'),    objVentasApu: _g('kpi-obj-ventas-apu'),
-      yoyVentasApu: _g('kpi-yoy-ventas-apu'), wowVentasApu: _g('kpi-wow-ventas-apu'),
-      ventasSfs:    _g('kpi-ventas-sfs'),    objVentasSfs: _g('kpi-obj-ventas-sfs'),
-      yoyVentasSfs: _g('kpi-yoy-ventas-sfs'), wowVentasSfs: _g('kpi-wow-ventas-sfs'),
-      // ── Group 2 — NPS ──
-      npsShop:    _g('kpi-nps-shopping'),    objNpsShop: _g('kpi-obj-nps-shopping'),
-      yoyNpsShop: _g('kpi-yoy-nps-shopping'), wowNpsShop: _g('kpi-wow-nps-shopping'),
-      npsApu:    _g('kpi-nps-apu'),    objNpsApu: _g('kpi-obj-nps-apu'),
-      yoyNpsApu: _g('kpi-yoy-nps-apu'), wowNpsApu: _g('kpi-wow-nps-apu'),
-      npsSupport:    _g('kpi-nps-support'),    objNpsSupport: _g('kpi-obj-nps-support'),
-      yoyNpsSupport: _g('kpi-yoy-nps-support'), wowNpsSupport: _g('kpi-wow-nps-support'),
-      npsTaa:    _g('kpi-nps-taa'),    objNpsTaa: _g('kpi-obj-nps-taa'),
-      yoyNpsTaa: _g('kpi-yoy-nps-taa'), wowNpsTaa: _g('kpi-wow-nps-taa'),
-      // ── Group 3 — Tráfico y Conversión ──
-      trafico:    _g('kpi-trafico'),    objTrafico: _g('kpi-obj-trafico'),
-      yoyTrafico: _g('kpi-yoy-trafico'), wowTrafico: _g('kpi-wow-trafico'),
-      yoyConv:    _g('kpi-yoy-conv'),   wowConv:    _g('kpi-wow-conv'),
-      // ── Group 4 — Operacionales ──
-      dta:    _g('kpi-dta'),    objDta: _g('kpi-obj-dta'),
-      intros1k:       _g('kpi-intros-1k'),       objIntros1k:       _g('kpi-obj-intros-1k'),
-      timely:         _g('kpi-timely'),           objTimely:         _g('kpi-obj-timely'),
-      cpUsage:        _g('kpi-cp-usage'),         objCpUsage:        _g('kpi-obj-cp-usage'),
-      gbConv:         _g('kpi-gb-conv'),          objGbConv:         _g('kpi-obj-gb-conv'),
-      introsSessions: _g('kpi-intros-sessions'),  objIntrosSessions: _g('kpi-obj-intros-sessions'),
-      iphoneTat:      _g('kpi-iphone-tat'),       objIphoneTat:      _g('kpi-obj-iphone-tat'),
+    const data = {};
+    KPI_CATALOG.forEach(kpi => {
+      data[kpi.id]           = _g('kv-' + kpi.id);
+      data[kpi.id + '_obj']  = _g('ko-' + kpi.id);
+      if (kpi.hasWoW) data[kpi.id + '_wow'] = _g('kw-' + kpi.id);
+      if (kpi.hasYoY) data[kpi.id + '_yoy'] = _g('ky-' + kpi.id);
     });
+    data.notes = _g('kpi-notes');
+    save(K.kpis, data);
     flash('kpi-saved');
     updateSummary();
     renderRadarChart();
-    renderMissionControl();
+    renderMissionControl?.();
     renderResumenKPIs();
   }, 400);
 }
+
 function loadKPIs() {
   const d = load(K.kpis, {});
-  const set = (id, v) => { try { const el=document.getElementById(id); if(el && d[v]!==undefined) el.value=d[v]; } catch(e) {} };
-  // Original compatibility fields
-  set('kpi-ventas','ventas');      set('kpi-obj-ventas','objVentas');
-  set('kpi-nps','nps');            set('kpi-obj-nps','objNps');
-  set('kpi-conv','conv');          set('kpi-obj-conv','objConv');
-  set('kpi-upt','upt');            set('kpi-obj-upt','objUpt');
-  set('kpi-acc','acc');            set('kpi-ac','ac');
-  set('kpi-clicount','clicount');  set('kpi-notes','notes');
-  // Critical KPIs YoY/WoW
-  set('kpi-yoy-ventas','yoyVentas'); set('kpi-wow-ventas','wowVentas');
-  set('kpi-yoy-nps','yoyNps');       set('kpi-wow-nps','wowNps');
-  // Group 1
-  set('kpi-ventas-business','ventasBusiness');    set('kpi-obj-ventas-business','objVentasBusiness');
-  set('kpi-yoy-ventas-business','yoyVentasBusiness'); set('kpi-wow-ventas-business','wowVentasBusiness');
-  set('kpi-ventas-apu','ventasApu');    set('kpi-obj-ventas-apu','objVentasApu');
-  set('kpi-yoy-ventas-apu','yoyVentasApu'); set('kpi-wow-ventas-apu','wowVentasApu');
-  set('kpi-ventas-sfs','ventasSfs');    set('kpi-obj-ventas-sfs','objVentasSfs');
-  set('kpi-yoy-ventas-sfs','yoyVentasSfs'); set('kpi-wow-ventas-sfs','wowVentasSfs');
-  // Group 2
-  set('kpi-nps-shopping','npsShop');    set('kpi-obj-nps-shopping','objNpsShop');
-  set('kpi-yoy-nps-shopping','yoyNpsShop'); set('kpi-wow-nps-shopping','wowNpsShop');
-  set('kpi-nps-apu','npsApu');          set('kpi-obj-nps-apu','objNpsApu');
-  set('kpi-yoy-nps-apu','yoyNpsApu');   set('kpi-wow-nps-apu','wowNpsApu');
-  set('kpi-nps-support','npsSupport');  set('kpi-obj-nps-support','objNpsSupport');
-  set('kpi-yoy-nps-support','yoyNpsSupport'); set('kpi-wow-nps-support','wowNpsSupport');
-  set('kpi-nps-taa','npsTaa');          set('kpi-obj-nps-taa','objNpsTaa');
-  set('kpi-yoy-nps-taa','yoyNpsTaa');   set('kpi-wow-nps-taa','wowNpsTaa');
-  // Group 3
-  set('kpi-trafico','trafico');    set('kpi-obj-trafico','objTrafico');
-  set('kpi-yoy-trafico','yoyTrafico'); set('kpi-wow-trafico','wowTrafico');
-  set('kpi-yoy-conv','yoyConv');   set('kpi-wow-conv','wowConv');
-  // Group 4
-  set('kpi-dta','dta');            set('kpi-obj-dta','objDta');
-  set('kpi-intros-1k','intros1k'); set('kpi-obj-intros-1k','objIntros1k');
-  set('kpi-timely','timely');      set('kpi-obj-timely','objTimely');
-  set('kpi-cp-usage','cpUsage');   set('kpi-obj-cp-usage','objCpUsage');
-  set('kpi-gb-conv','gbConv');     set('kpi-obj-gb-conv','objGbConv');
-  set('kpi-intros-sessions','introsSessions'); set('kpi-obj-intros-sessions','objIntrosSessions');
-  set('kpi-iphone-tat','iphoneTat'); set('kpi-obj-iphone-tat','objIphoneTat');
+  const set = (elemId, key) => {
+    try { const el = document.getElementById(elemId); if (el && d[key] !== undefined) el.value = d[key]; } catch(e) {}
+  };
+  KPI_CATALOG.forEach(kpi => {
+    set('kv-' + kpi.id, kpi.id);
+    set('ko-' + kpi.id, kpi.id + '_obj');
+    if (kpi.hasWoW) set('kw-' + kpi.id, kpi.id + '_wow');
+    if (kpi.hasYoY) set('ky-' + kpi.id, kpi.id + '_yoy');
+  });
+  set('kpi-notes', 'notes');
   refreshProgressBars();
 }
 function setBar(barId,pctId,val,obj) {
@@ -770,55 +709,111 @@ function calcTrendBadge(actualStr, anteriorStr) {
   return `<span class="yow-badge ${isUp?'up':'down'}">${isUp?'▲':'▼'} ${Math.abs(diff).toFixed(1)}%</span>`;
 }
 
+/* Format a KPI value for display based on type/format */
+function formatKPIValue(raw, kpi) {
+  const v = num(raw);
+  if (!raw || raw === '' || v === 0) return '—';
+  if (kpi.type === 'currency' && kpi.format === 'auto') {
+    const suffix = kpi.unit || '$';
+    if (v >= 1000000) return (v / 1000000).toFixed(1).replace(/\.0$/, '') + 'M' + suffix;
+    if (v >= 1000)    return (v / 1000).toFixed(0) + 'K' + suffix;
+    return v.toFixed(0) + suffix;
+  }
+  if (kpi.format === 'compact-k') {
+    return v >= 1000 ? (v / 1000).toFixed(1).replace(/\.0$/, '') + 'K' : String(v);
+  }
+  if (kpi.format === 'compact') {
+    return v >= 1000 ? (v / 1000).toFixed(0) + 'K' : String(v);
+  }
+  if (kpi.type === 'pct') return v.toFixed(1) + '%';
+  if (kpi.type === 'decimal') return v.toFixed(1);
+  if (kpi.unit) return v.toFixed(0) + kpi.unit;
+  return v.toFixed(0);
+}
+
+/* Calculate growth badge HTML for WoW/YoY */
+function calcKPIGrowthBadge(currentRaw, previousRaw, kpi) {
+  if (!previousRaw || !previousRaw.trim() || !currentRaw || !currentRaw.trim()) return '';
+  const cur = num(currentRaw), prev = num(previousRaw);
+  if (prev === 0 || cur === 0) return '';
+  let diff, label;
+  if (kpi.growth === 'pct') {
+    diff = ((cur - prev) / prev) * 100;
+    label = (diff >= 0 ? '+' : '') + diff.toFixed(1) + '%';
+  } else {
+    diff = cur - prev;
+    label = (diff >= 0 ? '+' : '') + diff.toFixed(1) + 'pts';
+  }
+  const isGood = kpi.inverse ? diff < 0 : diff > 0;
+  const arrow = isGood ? '▲' : diff === 0 ? '→' : '▼';
+  const cls = isGood ? 'yow-badge up' : diff === 0 ? 'yow-badge' : 'yow-badge down';
+  return `<span class="${cls}">${arrow} ${label}</span>`;
+}
+
 /* Update all YoY/WoW badge spans */
 function updateYoWBadges() {
-  // [actualId, yoyInputId, yoyBadgeId, wowInputId, wowBadgeId]
-  const pairs = [
-    ['kpi-ventas',         'kpi-yoy-ventas',         'badge-yoy-ventas',         'kpi-wow-ventas',         'badge-wow-ventas'],
-    ['kpi-nps',            'kpi-yoy-nps',             'badge-yoy-nps',             'kpi-wow-nps',             'badge-wow-nps'],
-    ['kpi-ventas-business','kpi-yoy-ventas-business', 'badge-yoy-ventas-business', 'kpi-wow-ventas-business', 'badge-wow-ventas-business'],
-    ['kpi-ventas-apu',     'kpi-yoy-ventas-apu',      'badge-yoy-ventas-apu',      'kpi-wow-ventas-apu',      'badge-wow-ventas-apu'],
-    ['kpi-ventas-sfs',     'kpi-yoy-ventas-sfs',      'badge-yoy-ventas-sfs',      'kpi-wow-ventas-sfs',      'badge-wow-ventas-sfs'],
-    ['kpi-nps-shopping',   'kpi-yoy-nps-shopping',    'badge-yoy-nps-shopping',    'kpi-wow-nps-shopping',    'badge-wow-nps-shopping'],
-    ['kpi-nps-apu',        'kpi-yoy-nps-apu',         'badge-yoy-nps-apu',         'kpi-wow-nps-apu',         'badge-wow-nps-apu'],
-    ['kpi-nps-support',    'kpi-yoy-nps-support',     'badge-yoy-nps-support',     'kpi-wow-nps-support',     'badge-wow-nps-support'],
-    ['kpi-nps-taa',        'kpi-yoy-nps-taa',         'badge-yoy-nps-taa',         'kpi-wow-nps-taa',         'badge-wow-nps-taa'],
-    ['kpi-trafico',        'kpi-yoy-trafico',          'badge-yoy-trafico',          'kpi-wow-trafico',          'badge-wow-trafico'],
-    ['kpi-conv',           'kpi-yoy-conv',             'badge-yoy-conv',             'kpi-wow-conv',             'badge-wow-conv'],
-  ];
-  pairs.forEach(([aId, yoyId, yoyBId, wowId, wowBId]) => {
-    const aVal = _g(aId);
-    const yoyBadge = document.getElementById(yoyBId);
-    const wowBadge = document.getElementById(wowBId);
-    if(yoyBadge) yoyBadge.innerHTML = calcTrendBadge(aVal, _g(yoyId));
-    if(wowBadge) wowBadge.innerHTML = calcTrendBadge(aVal, _g(wowId));
+  KPI_CATALOG.forEach(kpi => {
+    const cur = _g('kv-' + kpi.id);
+    if (kpi.hasWoW) {
+      const wowBadge = document.getElementById('kbw-' + kpi.id);
+      if (wowBadge) wowBadge.innerHTML = calcKPIGrowthBadge(cur, _g('kw-' + kpi.id), kpi);
+    }
+    if (kpi.hasYoY) {
+      const yoyBadge = document.getElementById('kby-' + kpi.id);
+      if (yoyBadge) yoyBadge.innerHTML = calcKPIGrowthBadge(cur, _g('ky-' + kpi.id), kpi);
+    }
   });
 }
 
 function refreshProgressBars() {
-  // ── Ventas Globales ──
-  setBar('bar-ventas','pct-ventas', _g('kpi-ventas'), _g('kpi-obj-ventas'));
-  setBar('bar-ventas-business','pct-ventas-business', _g('kpi-ventas-business'), _g('kpi-obj-ventas-business'));
-  setBar('bar-ventas-apu',     'pct-ventas-apu',      _g('kpi-ventas-apu'),      _g('kpi-obj-ventas-apu'));
-  setBar('bar-ventas-sfs',     'pct-ventas-sfs',      _g('kpi-ventas-sfs'),      _g('kpi-obj-ventas-sfs'));
-  // ── Product Zone ──
-  setBar('bar-conv',   'pct-conv',    _g('kpi-conv'),    _g('kpi-obj-conv'));
-  setBar('bar-trafico','pct-trafico', _g('kpi-trafico'), _g('kpi-obj-trafico'));
-  setBar('bar-upt',    'pct-upt',     _g('kpi-upt'),     _g('kpi-obj-upt'));
-  setBar('bar-intros-1k','pct-intros-1k', _g('kpi-intros-1k'), _g('kpi-obj-intros-1k'));
-  // ── Genius Bar ──
-  setBar('bar-dta',        'pct-dta',        _g('kpi-dta'),        _g('kpi-obj-dta'));
-  setBar('bar-iphone-tat', 'pct-iphone-tat', _g('kpi-iphone-tat'), _g('kpi-obj-iphone-tat'));
-  setBar('bar-nps-support','pct-nps-support', _g('kpi-nps-support'), _g('kpi-obj-nps-support'));
-  setBar('bar-nps-apu',    'pct-nps-apu',     _g('kpi-nps-apu'),     _g('kpi-obj-nps-apu'));
-  // ── Experiencia de Cliente ──
-  setBar('bar-nps',         'pct-nps',         _g('kpi-nps'),         _g('kpi-obj-nps'));
-  setBar('bar-nps-shopping','pct-nps-shopping', _g('kpi-nps-shopping'), _g('kpi-obj-nps-shopping'));
-  setBar('bar-nps-taa',     'pct-nps-taa',      _g('kpi-nps-taa'),      _g('kpi-obj-nps-taa'));
-  // ── YoY/WoW badges ──
+  KPI_CATALOG.forEach(kpi => {
+    const v = num(_g('kv-' + kpi.id));
+    const o = num(_g('ko-' + kpi.id));
+    let pct = 0;
+    if (o > 0) {
+      if (kpi.inverse) {
+        pct = Math.min(Math.round(o / v * 100), 100);
+      } else {
+        pct = Math.min(Math.round(v / o * 100), 100);
+      }
+    }
+    const bar = document.getElementById('kb-' + kpi.id);
+    const pctEl = document.getElementById('kp-' + kpi.id);
+    if (bar) {
+      bar.style.width = pct + '%';
+      if (kpi.inverse) {
+        bar.style.background = pct >= 100 ? 'var(--success)' : pct >= 80 ? 'var(--warning,#ff9f0a)' : 'var(--danger)';
+      } else {
+        bar.style.background = pct >= 90 ? 'var(--success)' : pct >= 70 ? 'var(--warning,#ff9f0a)' : 'var(--danger)';
+      }
+    }
+    if (pctEl) pctEl.textContent = o > 0 ? Math.round(kpi.inverse ? o / v * 100 : v / o * 100) + '%' : '—';
+    if (kpi.extraPct) {
+      const totalEl = document.getElementById('kv-' + kpi.extraPct);
+      const dispEl = document.getElementById('kpct-extra-' + kpi.id);
+      if (dispEl) {
+        const totalV = num(totalEl ? totalEl.value : '');
+        dispEl.textContent = (totalV > 0 && v > 0) ? '% of Total: ' + (v / totalV * 100).toFixed(1) + '%' : '';
+      }
+    }
+    const dispVal = document.getElementById('kdisp-' + kpi.id);
+    const dispObj = document.getElementById('kdispo-' + kpi.id);
+    if (dispVal) dispVal.textContent = formatKPIValue(_g('kv-' + kpi.id), kpi);
+    if (dispObj) dispObj.textContent = formatKPIValue(_g('ko-' + kpi.id), kpi);
+  });
   updateYoWBadges();
   try { checkKPIAlerts(); } catch(e) {}
   try { renderKPIHealthSummary(); renderKPISmartInsights(); } catch(e) {}
+}
+
+function saveKPINotes() {
+  clearTimeout(_saveKPIsTimer);
+  _saveKPIsTimer = setTimeout(() => {
+    const d = load(K.kpis, {});
+    d.notes = _g('kpi-notes');
+    save(K.kpis, d);
+    flash('kpi-saved');
+  }, 400);
 }
 
 /* ═══════════════════════════════════════════════
@@ -1758,30 +1753,14 @@ function scheduleAllNotifications() {
 function saveKPISnapshot() {
   const today = localDateStr();
   let history = load(K.kpiHistory, []);
-  history = history.filter(s=>s.date!==today); // only one snapshot per day
-  history.push({
-    date: today,
-    ventas: _g('kpi-ventas'),      objVentas: _g('kpi-obj-ventas'),
-    nps:    _g('kpi-nps'),          objNps:    _g('kpi-obj-nps'),
-    conv:   _g('kpi-conv'),         objConv:   _g('kpi-obj-conv'),
-    upt:    _g('kpi-upt'),          objUpt:    _g('kpi-obj-upt'),
-    ac:     _g('kpi-ac'),           objAc:     String(AC_ALERT_THRESHOLD),
-    dta:    _g('kpi-dta'),          objDta:    _g('kpi-obj-dta'),
-    trafico:_g('kpi-trafico'),      objTrafico:_g('kpi-obj-trafico'),
-    ventasBusiness: _g('kpi-ventas-business'), objVentasBusiness: _g('kpi-obj-ventas-business'),
-    ventasApu:      _g('kpi-ventas-apu'),      objVentasApu:      _g('kpi-obj-ventas-apu'),
-    ventasSfs:      _g('kpi-ventas-sfs'),      objVentasSfs:      _g('kpi-obj-ventas-sfs'),
-    npsShop:        _g('kpi-nps-shopping'),    objNpsShop:        _g('kpi-obj-nps-shopping'),
-    npsApu:         _g('kpi-nps-apu'),         objNpsApu:         _g('kpi-obj-nps-apu'),
-    npsSupport:     _g('kpi-nps-support'),     objNpsSupport:     _g('kpi-obj-nps-support'),
-    npsTaa:         _g('kpi-nps-taa'),         objNpsTaa:         _g('kpi-obj-nps-taa'),
-    intros1k:       _g('kpi-intros-1k'),       objIntros1k:       _g('kpi-obj-intros-1k'),
-    timely:         _g('kpi-timely'),           objTimely:         _g('kpi-obj-timely'),
-    cpUsage:        _g('kpi-cp-usage'),         objCpUsage:        _g('kpi-obj-cp-usage'),
-    gbConv:         _g('kpi-gb-conv'),          objGbConv:         _g('kpi-obj-gb-conv'),
-    introsSessions: _g('kpi-intros-sessions'),  objIntrosSessions: _g('kpi-obj-intros-sessions'),
-    iphoneTat:      _g('kpi-iphone-tat'),       objIphoneTat:      _g('kpi-obj-iphone-tat'),
+  history = history.filter(s => s.date !== today);
+  const snap = { date: today };
+  KPI_CATALOG.forEach(kpi => {
+    snap[kpi.id]          = _g('kv-' + kpi.id);
+    snap[kpi.id + '_obj'] = _g('ko-' + kpi.id);
   });
+  snap.context = _g('kpi-notes');
+  history.push(snap);
   save(K.kpiHistory, history);
   renderKPIHistory();
   flash('kpi-saved');
@@ -1797,31 +1776,7 @@ function autoSaveDailySnapshot() {
 // Metric definitions for the KPI history chart.
 // All metrics are normalized to a 0–100 scale (% of objective where applicable).
 // Values are capped at 150 to handle overperformance while keeping the chart readable.
-const KPI_CHART_MAX_PCT = 150;
-const KPI_CHART_METRICS = [
-  { key:'ventas',         label:'💰 Ventas %',         color:'var(--accent)',  val: d=>{ const v=num(d.ventas),o=num(d.objVentas);                 return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'ventasBusiness', label:'💼 Ventas Business',  color:'#30d158',        val: d=>{ const v=num(d.ventasBusiness),o=num(d.objVentasBusiness); return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'ventasApu',      label:'📱 Ventas APU',       color:'#0a84ff',        val: d=>{ const v=num(d.ventasApu),o=num(d.objVentasApu);           return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'ventasSfs',      label:'🚚 Ventas SFS',       color:'#5e5ce6',        val: d=>{ const v=num(d.ventasSfs),o=num(d.objVentasSfs);           return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'nps',            label:'⭐ NPS Tienda',        color:'var(--success)', val: d=>Math.min(num(d.nps),100) },
-  { key:'npsShop',        label:'🛍️ NPS Shopping',     color:'#ffd60a',        val: d=>Math.min(num(d.npsShop),100) },
-  { key:'npsApu',         label:'🔧 NPS APU',           color:'#ff6b35',        val: d=>Math.min(num(d.npsApu),100) },
-  { key:'npsSupport',     label:'🎧 NPS Support',       color:'#ff453a',        val: d=>Math.min(num(d.npsSupport),100) },
-  { key:'npsTaa',         label:'🎓 NPS T@A',           color:'#bf5af2',        val: d=>Math.min(num(d.npsTaa),100) },
-  { key:'conv',           label:'🔄 Conversión',        color:'#ff9f0a',        val: d=>{ const v=num(d.conv),o=num(d.objConv);                     return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'trafico',        label:'👣 Tráfico',           color:'#64d2ff',        val: d=>num(d.trafico) },
-  { key:'upt',            label:'🛒 UPT',              color:'#34c759',        val: d=>{ const v=num(d.upt),o=num(d.objUpt);                       return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'dta',            label:'⏰ DTA %',             color:'#8e8e93',        val: d=>{ const v=num(d.dta),o=num(d.objDta);                       return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'intros1k',       label:'🎯 Intros/1K',         color:'#ac8e68',        val: d=>{ const v=num(d.intros1k),o=num(d.objIntros1k);             return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'timely',         label:'⏱️ Timely %',          color:'#6ac4dc',        val: d=>{ const v=num(d.timely),o=num(d.objTimely);                 return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'cpUsage',        label:'💬 C&P Usage',         color:'#9d6cf0',        val: d=>{ const v=num(d.cpUsage),o=num(d.objCpUsage);               return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'gbConv',         label:'🎓 GB Conv.',           color:'#f19a38',        val: d=>{ const v=num(d.gbConv),o=num(d.objGbConv);                 return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'introsSessions', label:'🔍 Intros/Sessions',   color:'#5ac8f5',        val: d=>{ const v=num(d.introsSessions),o=num(d.objIntrosSessions); return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-  { key:'iphoneTat',      label:'📱 iPhone TAT',         color:'#e8675a',        val: d=>{ const v=num(d.iphoneTat),o=num(d.objIphoneTat);           return o>0?Math.min(v/o*100,KPI_CHART_MAX_PCT):0; } },
-];
-
-const DEFAULT_KPI_CHART_METRICS    = ['ventas','nps'];
-const DEFAULT_COMPARATIVA_METRICS  = ['ventas','nps','conv','dta'];
+/* KPI_CHART_METRICS — declared after KPI_CATALOG below to avoid TDZ */
 
 function getSelectedKPIMetrics() {
   const saved = load('apg_kpi_chart_metrics', DEFAULT_KPI_CHART_METRICS);
@@ -1946,8 +1901,10 @@ function renderKPIHistory() {
   const history = load(K.kpiHistory, []).slice(-14).reverse();
   if(!history.length){ wrap.innerHTML=''; if(empty)empty.style.display='block'; return; }
   if(empty) empty.style.display='none';
+  const cols = KPI_HIGHLIGHTED.slice(0, 4);
+  const colDefs = cols.map(id => KPI_CATALOG.find(k => k.id === id)).filter(Boolean);
   wrap.innerHTML=`<table class="kpi-history-table">
-    <thead><tr><th>Fecha</th><th>Contexto</th><th>Ventas</th><th>NPS</th><th>Conversión</th><th>UPT</th></tr></thead>
+    <thead><tr><th>Fecha</th><th>Contexto</th>${colDefs.map(k=>`<th>${k.icon} ${k.label}</th>`).join('')}</tr></thead>
     <tbody>${history.map((s,i)=>{
       const prev = history[i+1];
       const arrow = (cur,prv)=>{
@@ -1960,10 +1917,7 @@ function renderKPIHistory() {
       return `<tr>
         <td>${fmtDate(s.date)}</td>
         <td style="font-size:11px;color:var(--text-secondary);max-width:140px;white-space:normal">${esc(s.context||'—')}</td>
-        <td>${esc(s.ventas||'—')} ${prev?arrow(s.ventas,prev.ventas):''}</td>
-        <td>${esc(s.nps||'—')} ${prev?arrow(s.nps,prev.nps):''}</td>
-        <td>${esc(s.conv||'—')} ${prev?arrow(s.conv,prev.conv):''}</td>
-        <td>${esc(s.upt||'—')} ${prev?arrow(s.upt,prev.upt):''}</td>
+        ${colDefs.map(k=>`<td>${esc(s[k.id]||'—')} ${prev?arrow(s[k.id],prev[k.id]):''}</td>`).join('')}
       </tr>`;
     }).join('')}</tbody>
   </table>`;
@@ -2006,29 +1960,25 @@ function getKPITrend(field) {
    KPI VISUAL ALERTS (Feature 7)
 ═══════════════════════════════════════════════ */
 function checkKPIAlerts() {
-  const ventas=num(_g('kpi-ventas'));
-  const objVentas=num(_g('kpi-obj-ventas'));
-  const nps=num(_g('kpi-nps'));
-  const objNps=num(_g('kpi-obj-nps'));
-  const ac=num(_g('kpi-ac'));
-  const objAcEl=document.getElementById('kpi-obj-ac'); const objAc=num(objAcEl ? objAcEl.value : String(AC_ALERT_THRESHOLD));
-  const conv=num(_g('kpi-conv'));
-  const objConv=num(_g('kpi-obj-conv'));
-  const upt=num(_g('kpi-upt'));
-  const objUpt=num(_g('kpi-obj-upt'));
+  const ventas=num(_g('kv-ventas-totales'));
+  const objVentas=num(_g('ko-ventas-totales'));
+  const nps=num(_g('kv-nps-pz'));
+  const objNps=num(_g('ko-nps-pz'));
+  const conv=num(_g('kv-conversion'));
+  const objConv=num(_g('ko-conversion'));
   const hour = new Date().getHours();
 
   document.querySelectorAll('.kpi-alert-badge').forEach(b=>b.remove());
 
   const ventasPct = objVentas>0 ? ventas/objVentas : 0;
-  const ventasCard = document.getElementById('bar-ventas')?.closest('.card');
+  const ventasCard = document.getElementById('kb-ventas-totales')?.closest('.card');
   if(ventasCard) {
     if(ventasPct<0.7 && hour>=15) {
       const badge=document.createElement('div');
       badge.className='kpi-alert-badge danger'; badge.textContent='⚠️ Atención';
       ventasCard.appendChild(badge);
     }
-    const trend=getKPITrend('ventas');
+    const trend=getKPITrend('ventas-totales');
     if(trend) {
       const trendEl=document.createElement('span');
       trendEl.className='kpi-trend '+trend.cls;
@@ -2038,10 +1988,10 @@ function checkKPIAlerts() {
     }
   }
 
-  const npsCard = document.getElementById('bar-nps')?.closest('.card');
+  const npsCard = document.getElementById('kb-nps-pz')?.closest('.card');
   if(npsCard) {
     npsCard.style.borderColor = (nps < objNps && objNps>0) ? 'var(--danger)' : '';
-    const trend=getKPITrend('nps');
+    const trend=getKPITrend('nps-pz');
     if(trend) {
       const trendEl=document.createElement('span');
       trendEl.className='kpi-trend '+trend.cls;
@@ -2051,17 +2001,8 @@ function checkKPIAlerts() {
     }
   }
 
-  const acCardEl = document.getElementById('kpi-ac')?.closest('.card');
-  if(acCardEl && ac<AC_ALERT_THRESHOLD) {
-    const badge=document.createElement('div');
-    badge.className='kpi-alert-badge warning'; badge.textContent='⚠️ AC+ bajo';
-    acCardEl.appendChild(badge);
-  }
-
-  const npsPctVal=objNps>0?nps/objNps:0;
   const convPctVal=objConv>0?conv/objConv:0;
-  const uptPctVal=objUpt>0?upt/objUpt:0;
-  const onTrack=ventasPct>=0.9&&npsPctVal>=0.9&&convPctVal>=0.9&&uptPctVal>=0.9;
+  const onTrack=ventasPct>=0.9&&(objNps>0?nps/objNps:0)>=0.9&&convPctVal>=0.9;
   const resNpsGrid=document.getElementById('res-nps-grid');
   if(resNpsGrid) {
     resNpsGrid.querySelectorAll('.kpi-alert-badge').forEach(b=>b.remove());
@@ -2081,10 +2022,10 @@ function getKPIStreaks() {
   if (history.length < 2) return [];
   const sorted = history.slice().sort((a, b) => a.date.localeCompare(b.date));
   const checks = [
-    { name: 'Ventas',     val: 'ventas', obj: 'objVentas' },
-    { name: 'NPS',        val: 'nps',    obj: 'objNps'    },
-    { name: 'DTA',        val: 'dta',    obj: 'objDta'    },
-    { name: 'Conversión', val: 'conv',   obj: 'objConv'   },
+    { name: 'Ventas',     val: 'ventas-totales', obj: 'ventas-totales_obj' },
+    { name: 'NPS',        val: 'nps-pz',         obj: 'nps-pz_obj'        },
+    { name: 'DTA',        val: 'dta-hrs',         obj: 'dta-hrs_obj'        },
+    { name: 'Conversión', val: 'conversion',      obj: 'conversion_obj'    },
   ];
   const streaks = [];
   checks.forEach(kpi => {
@@ -2112,6 +2053,75 @@ function renderKPIStreakAlerts() {
     ).join('');
   });
 }
+
+function renderKPIPage() {
+  const container = document.getElementById('kpi-zones-container');
+  if (!container) return;
+  const d = load(K.kpis, {});
+  const html = KPI_ZONES.map(zone => {
+    const kpis = KPI_CATALOG.filter(k => k.zone === zone.id);
+    if (!kpis.length) return '';
+    const cards = kpis.map(kpi => {
+      const val = d[kpi.id] || '';
+      const obj = d[kpi.id + '_obj'] || '';
+      const wow = d[kpi.id + '_wow'] || '';
+      const yoy = d[kpi.id + '_yoy'] || '';
+      const inverseLabel = kpi.inverse ? '<span style="font-size:10px;color:var(--text-secondary);margin-left:6px">↓=✓</span>' : '';
+      const extraPctHtml = kpi.extraPct
+        ? `<div class="kpi-extra-pct" id="kpct-extra-${kpi.id}" style="font-size:11px;color:var(--text-secondary);margin-top:2px"></div>`
+        : '';
+      const wowRow = kpi.hasWoW ? `
+        <div class="kpi-yow-row">
+          <span class="kpi-yow-label">WoW:</span>
+          <input class="kpi-obj-input" id="kw-${kpi.id}" placeholder="Sem ant." value="${esc(wow)}" style="width:90px" oninput="saveKPIs()">
+          <span id="kbw-${kpi.id}"></span>
+        </div>` : '';
+      const yoyRow = kpi.hasYoY ? `
+        <div class="kpi-yow-row">
+          <span class="kpi-yow-label">YoY:</span>
+          <input class="kpi-obj-input" id="ky-${kpi.id}" placeholder="Año ant." value="${esc(yoy)}" style="width:90px" oninput="saveKPIs()">
+          <span id="kby-${kpi.id}"></span>
+        </div>` : '';
+      return `
+        <div class="card kpi-card-new" id="kcard-${kpi.id}">
+          <div class="kpi-card-header">
+            <span class="kpi-card-icon">${kpi.icon}</span>
+            <span class="kpi-card-label">${esc(kpi.label)}${inverseLabel}</span>
+          </div>
+          <div class="kpi-inputs-row">
+            <div style="flex:1">
+              <div class="field-label" style="font-size:10px">Valor actual</div>
+              <input class="kpi-editable" id="kv-${kpi.id}" placeholder="0" value="${esc(val)}" oninput="saveKPIs()">
+              <div class="kpi-disp" id="kdisp-${kpi.id}" style="font-size:11px;color:var(--text-secondary);margin-top:2px">${formatKPIValue(val, kpi)}</div>
+            </div>
+            <div style="flex:0 0 auto">
+              <div class="field-label" style="font-size:10px">Objetivo</div>
+              <input class="kpi-obj-input" id="ko-${kpi.id}" placeholder="Obj" value="${esc(obj)}" oninput="saveKPIs()">
+              <div class="kpi-disp" id="kdispo-${kpi.id}" style="font-size:11px;color:var(--text-secondary);margin-top:2px">${formatKPIValue(obj, kpi)}</div>
+            </div>
+          </div>
+          ${extraPctHtml}
+          <div class="kpi-bar-wrap" style="margin-top:8px">
+            <div class="kpi-bar-fill" id="kb-${kpi.id}" style="width:0%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+            <span class="kpi-pct-label" id="kp-${kpi.id}" style="font-size:11px;color:var(--text-secondary)">—</span>
+          </div>
+          <div class="kpi-yow-rows" style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
+            ${wowRow}${yoyRow}
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="kpi-zone-section" style="margin-bottom:28px">
+        <div class="kpi-group-header">${esc(zone.label)}</div>
+        <div class="kpi-grid">${cards}</div>
+      </div>`;
+  }).join('');
+  container.innerHTML = html;
+  refreshProgressBars();
+}
+window.renderKPIPage = renderKPIPage;
 
 function renderCommitmentsKPIsMirror() {
   const wrap = document.getElementById('commitments-kpis-mirror-content');
@@ -5024,66 +5034,32 @@ function fmtPrevWeekLabel() {
 function executeWeekClose(formValues) {
   // 1. Si se pasan valores del formulario, escribirlos en los inputs de KPIs
   if (formValues) {
-    const fieldMap = {
-      's0-ventas':   'kpi-ventas',
-      's0-obj-ventas': 'kpi-obj-ventas',
-      's0-nps':      'kpi-nps',
-      's0-obj-nps':  'kpi-obj-nps',
-      's0-conv':     'kpi-conv',
-      's0-obj-conv': 'kpi-obj-conv',
-      's0-trafico':  'kpi-trafico',
-      's0-obj-trafico': 'kpi-obj-trafico',
-      's0-dta':      'kpi-dta',
-      's0-obj-dta':  'kpi-obj-dta',
-    };
-    for (const [formId, kpiId] of Object.entries(fieldMap)) {
-      const val = formValues[formId];
-      if (val !== undefined && val !== '') {
-        const el = document.getElementById(kpiId);
-        if (el) el.value = val;
+    KPI_CATALOG.forEach(kpi => {
+      const valKey = 's0-kv-' + kpi.id;
+      const objKey = 's0-ko-' + kpi.id;
+      if (formValues[valKey] !== undefined && formValues[valKey] !== '') {
+        const el = document.getElementById('kv-' + kpi.id);
+        if (el) el.value = formValues[valKey];
       }
-    }
-    // Notas
+      if (formValues[objKey] !== undefined && formValues[objKey] !== '') {
+        const el = document.getElementById('ko-' + kpi.id);
+        if (el) el.value = formValues[objKey];
+      }
+    });
     const notesEl = document.getElementById('kpi-notes');
     if (notesEl && formValues['s0-notes']) notesEl.value = formValues['s0-notes'];
   }
 
   // Guardar KPIs en localStorage antes de snapshot
   clearTimeout(_saveKPIsTimer);
-  const kpisData = {
-    ventas:    _g('kpi-ventas'),    objVentas: _g('kpi-obj-ventas'),
-    nps:       _g('kpi-nps'),       objNps:    _g('kpi-obj-nps'),
-    conv:      _g('kpi-conv'),      objConv:   _g('kpi-obj-conv'),
-    upt:       _g('kpi-upt'),       objUpt:    _g('kpi-obj-upt'),
-    acc:       _g('kpi-acc'),       ac:        _g('kpi-ac'),
-    clicount:  _g('kpi-clicount'),  notes:     _g('kpi-notes'),
-    yoyVentas: _g('kpi-yoy-ventas'), wowVentas: _g('kpi-wow-ventas'),
-    yoyNps:    _g('kpi-yoy-nps'),    wowNps:    _g('kpi-wow-nps'),
-    ventasBusiness:    _g('kpi-ventas-business'),    objVentasBusiness: _g('kpi-obj-ventas-business'),
-    yoyVentasBusiness: _g('kpi-yoy-ventas-business'), wowVentasBusiness: _g('kpi-wow-ventas-business'),
-    ventasApu:    _g('kpi-ventas-apu'),    objVentasApu: _g('kpi-obj-ventas-apu'),
-    yoyVentasApu: _g('kpi-yoy-ventas-apu'), wowVentasApu: _g('kpi-wow-ventas-apu'),
-    ventasSfs:    _g('kpi-ventas-sfs'),    objVentasSfs: _g('kpi-obj-ventas-sfs'),
-    yoyVentasSfs: _g('kpi-yoy-ventas-sfs'), wowVentasSfs: _g('kpi-wow-ventas-sfs'),
-    npsShop:    _g('kpi-nps-shopping'),    objNpsShop: _g('kpi-obj-nps-shopping'),
-    yoyNpsShop: _g('kpi-yoy-nps-shopping'), wowNpsShop: _g('kpi-wow-nps-shopping'),
-    npsApu:    _g('kpi-nps-apu'),    objNpsApu: _g('kpi-obj-nps-apu'),
-    yoyNpsApu: _g('kpi-yoy-nps-apu'), wowNpsApu: _g('kpi-wow-nps-apu'),
-    npsSupport:    _g('kpi-nps-support'),    objNpsSupport: _g('kpi-obj-nps-support'),
-    yoyNpsSupport: _g('kpi-yoy-nps-support'), wowNpsSupport: _g('kpi-wow-nps-support'),
-    npsTaa:    _g('kpi-nps-taa'),    objNpsTaa: _g('kpi-obj-nps-taa'),
-    yoyNpsTaa: _g('kpi-yoy-nps-taa'), wowNpsTaa: _g('kpi-wow-nps-taa'),
-    trafico:    _g('kpi-trafico'),    objTrafico: _g('kpi-obj-trafico'),
-    yoyTrafico: _g('kpi-yoy-trafico'), wowTrafico: _g('kpi-wow-trafico'),
-    yoyConv:    _g('kpi-yoy-conv'),   wowConv:    _g('kpi-wow-conv'),
-    dta:        _g('kpi-dta'),        objDta:     _g('kpi-obj-dta'),
-    intros1k:   _g('kpi-intros-1k'), objIntros1k: _g('kpi-obj-intros-1k'),
-    timely:     _g('kpi-timely'),     objTimely:   _g('kpi-obj-timely'),
-    cpUsage:    _g('kpi-cp-usage'),   objCpUsage:  _g('kpi-obj-cp-usage'),
-    gbConv:     _g('kpi-gb-conv'),    objGbConv:   _g('kpi-obj-gb-conv'),
-    introsSessions: _g('kpi-intros-sessions'), objIntrosSessions: _g('kpi-obj-intros-sessions'),
-    iphoneTat:  _g('kpi-iphone-tat'), objIphoneTat: _g('kpi-obj-iphone-tat'),
-  };
+  const kpisData = {};
+  KPI_CATALOG.forEach(kpi => {
+    kpisData[kpi.id]          = _g('kv-' + kpi.id);
+    kpisData[kpi.id + '_obj'] = _g('ko-' + kpi.id);
+    if (kpi.hasWoW) kpisData[kpi.id + '_wow'] = _g('kw-' + kpi.id);
+    if (kpi.hasYoY) kpisData[kpi.id + '_yoy'] = _g('ky-' + kpi.id);
+  });
+  kpisData.notes = _g('kpi-notes');
   save(K.kpis, kpisData);
 
   // 2. Snapshot en el histórico
@@ -5099,43 +5075,20 @@ function executeWeekClose(formValues) {
   save('apg_weekly_notes', weeklyNotes);
 
   // 4. Copiar valores actuales a los campos WoW (semana anterior para la nueva semana)
-  const wowMap = [
-    ['kpi-ventas',          'kpi-wow-ventas'],
-    ['kpi-nps',             'kpi-wow-nps'],
-    ['kpi-conv',            'kpi-wow-conv'],
-    ['kpi-trafico',         'kpi-wow-trafico'],
-    ['kpi-ventas-business', 'kpi-wow-ventas-business'],
-    ['kpi-ventas-apu',      'kpi-wow-ventas-apu'],
-    ['kpi-ventas-sfs',      'kpi-wow-ventas-sfs'],
-    ['kpi-nps-shopping',    'kpi-wow-nps-shopping'],
-    ['kpi-nps-apu',         'kpi-wow-nps-apu'],
-    ['kpi-nps-support',     'kpi-wow-nps-support'],
-    ['kpi-nps-taa',         'kpi-wow-nps-taa'],
-  ];
-  for (const [srcId, dstId] of wowMap) {
-    const srcEl = document.getElementById(srcId);
-    const dstEl = document.getElementById(dstId);
-    if (srcEl && dstEl) dstEl.value = srcEl.value;
-  }
-
+  const savedData = load(K.kpis, {});
+  const newData = Object.assign({}, savedData);
+  KPI_CATALOG.forEach(kpi => {
+    if (kpi.hasWoW) newData[kpi.id + '_wow'] = savedData[kpi.id] || '';
+  });
   // 5. Limpiar campos de valor actual (NO objetivos, NO YoY, NO WoW)
-  const clearIds = [
-    'kpi-ventas','kpi-nps','kpi-conv','kpi-trafico',
-    'kpi-ventas-business','kpi-ventas-apu','kpi-ventas-sfs',
-    'kpi-nps-shopping','kpi-nps-apu','kpi-nps-support','kpi-nps-taa',
-    'kpi-dta','kpi-upt','kpi-intros-1k','kpi-timely','kpi-cp-usage',
-    'kpi-gb-conv','kpi-intros-sessions','kpi-iphone-tat',
-  ];
-  for (const id of clearIds) {
-    const el = document.getElementById(id);
+  KPI_CATALOG.forEach(kpi => {
+    newData[kpi.id] = '';
+    const el = document.getElementById('kv-' + kpi.id);
     if (el) el.value = '';
-  }
-  // Limpiar notas
-  const notesEl2 = document.getElementById('kpi-notes');
-  if (notesEl2) notesEl2.value = '';
-
-  // Persistir el estado limpio
-  saveKPIs();
+    const wowEl = document.getElementById('kw-' + kpi.id);
+    if (wowEl) wowEl.value = newData[kpi.id + '_wow'];
+  });
+  save(K.kpis, newData);
 
   // 6. Registrar fecha de cierre
   save('apg_last_week_closed', getWeekStart(0).toISOString().split('T')[0]);
@@ -5181,59 +5134,34 @@ function renderRoutineStep(step, container, weekStart) {
           <button class="btn btn-primary" onclick="renderRoutineStep(2)">Continuar a preparar la semana →</button>
         </div>`;
     } else {
-      // Formulario de cierre
       const kpisRaw = load(K.kpis, {});
-      const fv = (field, def='') => kpisRaw[field] || def;
+      const zonesHtml = KPI_ZONES.map(zone => {
+        const kpis = KPI_CATALOG.filter(k => k.zone === zone.id);
+        if (!kpis.length) return '';
+        const cards = kpis.map(kpi => {
+          const fv = kpisRaw[kpi.id] || '';
+          const fo = kpisRaw[kpi.id + '_obj'] || '';
+          return `<div class="card" style="padding:10px">
+            <div style="font-size:10px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">${kpi.icon} ${esc(kpi.label)}</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input class="kpi-editable" id="s0-kv-${kpi.id}" placeholder="Valor" value="${esc(fv)}" style="flex:1;min-width:0">
+              <span style="font-size:11px;color:var(--text-secondary);flex-shrink:0">Obj:</span>
+              <input class="kpi-obj-input" id="s0-ko-${kpi.id}" placeholder="Obj" value="${esc(fo)}" style="width:70px;flex-shrink:0">
+            </div>
+          </div>`;
+        }).join('');
+        return `<div style="margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">${esc(zone.label)}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">${cards}</div>
+        </div>`;
+      }).join('');
       content = `
-        <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;flex-direction:column;gap:14px">
           <div style="font-size:13px;color:var(--text-secondary)">Registra los resultados de la semana del <strong>${prevWeekLabel}</strong> antes de empezar la nueva.</div>
-
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
-            <div class="card" style="padding:12px">
-              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">💰 VENTAS TOTALES</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input class="kpi-editable" id="s0-ventas" placeholder="Valor" value="${esc(fv('ventas'))}" style="flex:1">
-                <span style="font-size:12px;color:var(--text-secondary)">Obj:</span>
-                <input class="kpi-obj-input" id="s0-obj-ventas" placeholder="Obj" value="${esc(fv('objVentas'))}" style="width:80px">
-              </div>
-            </div>
-            <div class="card" style="padding:12px">
-              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">⭐ NPS TIENDA</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input class="kpi-editable" id="s0-nps" placeholder="Valor" value="${esc(fv('nps'))}" style="flex:1">
-                <span style="font-size:12px;color:var(--text-secondary)">Obj:</span>
-                <input class="kpi-obj-input" id="s0-obj-nps" placeholder="Obj" value="${esc(fv('objNps'))}" style="width:80px">
-              </div>
-            </div>
-            <div class="card" style="padding:12px">
-              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">🔄 CONVERSIÓN</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input class="kpi-editable" id="s0-conv" placeholder="Valor" value="${esc(fv('conv'))}" style="flex:1">
-                <span style="font-size:12px;color:var(--text-secondary)">Obj:</span>
-                <input class="kpi-obj-input" id="s0-obj-conv" placeholder="Obj" value="${esc(fv('objConv'))}" style="width:80px">
-              </div>
-            </div>
-            <div class="card" style="padding:12px">
-              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">👣 TRÁFICO</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input class="kpi-editable" id="s0-trafico" placeholder="Valor" value="${esc(fv('trafico'))}" style="flex:1">
-                <span style="font-size:12px;color:var(--text-secondary)">Obj:</span>
-                <input class="kpi-obj-input" id="s0-obj-trafico" placeholder="Obj" value="${esc(fv('objTrafico'))}" style="width:80px">
-              </div>
-            </div>
-            <div class="card" style="padding:12px">
-              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">⏰ DTA HORAS</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input class="kpi-editable" id="s0-dta" placeholder="Valor" value="${esc(fv('dta'))}" style="flex:1">
-                <span style="font-size:12px;color:var(--text-secondary)">Obj:</span>
-                <input class="kpi-obj-input" id="s0-obj-dta" placeholder="Obj" value="${esc(fv('objDta'))}" style="width:80px">
-              </div>
-            </div>
-          </div>
-
+          ${zonesHtml}
           <div>
             <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📝 ¿Cómo fue la semana? Contexto y análisis de resultados</div>
-            <textarea class="notes-area" id="s0-notes" placeholder="Factores externos, iniciativas, puntos de mejora, highlights..." style="min-height:120px;width:100%">${esc(fv('notes'))}</textarea>
+            <textarea class="notes-area" id="s0-notes" placeholder="Factores externos, iniciativas, puntos de mejora, highlights..." style="min-height:100px;width:100%">${esc(kpisRaw.notes||'')}</textarea>
           </div>
         </div>`;
     }
@@ -5436,11 +5364,14 @@ function renderRoutineStep(step, container, weekStart) {
 /** Recoge los valores del formulario de cierre (Step 0/1) y ejecuta el cierre */
 function closeWeekFromRoutine() {
   const formValues = {};
-  const ids = ['s0-ventas','s0-obj-ventas','s0-nps','s0-obj-nps','s0-conv','s0-obj-conv','s0-trafico','s0-obj-trafico','s0-dta','s0-obj-dta','s0-notes'];
-  for (const id of ids) {
-    const el = document.getElementById(id);
-    if (el) formValues[id] = el.value;
-  }
+  KPI_CATALOG.forEach(kpi => {
+    const valEl = document.getElementById('s0-kv-' + kpi.id);
+    const objEl = document.getElementById('s0-ko-' + kpi.id);
+    if (valEl) formValues['s0-kv-' + kpi.id] = valEl.value;
+    if (objEl) formValues['s0-ko-' + kpi.id] = objEl.value;
+  });
+  const notesEl = document.getElementById('s0-notes');
+  if (notesEl) formValues['s0-notes'] = notesEl.value;
   executeWeekClose(formValues);
   renderRoutineStep(2);
 }
@@ -5641,36 +5572,107 @@ function viewArchive() {
 }
 
 /* ═══════════════════════════════════════════════
-   MIS KPIs — Selectable 5-KPI mini-cards for Resumen
-   (declared here so they are available before the init
-    sequence calls renderResumenKPIs())
+   KPI CATALOG — Single source of truth for all 48 KPIs
+   (declared before init sequence so TDZ is safe)
 ═══════════════════════════════════════════════ */
-const RESUMEN_KPI_CATALOG = [
-  { key:'ventas',         label:'💰 Ventas Totales',  short:'Ventas',      valKey:'ventas',         objKey:'objVentas' },
-  { key:'nps',            label:'⭐ NPS Tienda',       short:'NPS Tienda',  valKey:'nps',            objKey:'objNps' },
-  { key:'dta',            label:'⏰ DTA Horas',        short:'DTA',         valKey:'dta',            objKey:'objDta' },
-  { key:'conv',           label:'🔄 Conversión',       short:'Conv.',       valKey:'conv',           objKey:'objConv' },
-  { key:'trafico',        label:'👣 Tráfico',           short:'Tráfico',     valKey:'trafico',        objKey:'objTrafico' },
-  { key:'ventasBusiness', label:'💼 Ventas Business',  short:'Business',    valKey:'ventasBusiness', objKey:'objVentasBusiness' },
-  { key:'ventasApu',      label:'📱 Ventas APU',       short:'APU',         valKey:'ventasApu',      objKey:'objVentasApu' },
-  { key:'ventasSfs',      label:'🚚 Ventas SFS',       short:'SFS',         valKey:'ventasSfs',      objKey:'objVentasSfs' },
-  { key:'npsShop',        label:'🛍️ NPS Shopping',     short:'NPS Shop',    valKey:'npsShop',        objKey:'objNpsShop' },
-  { key:'npsApu',         label:'🔧 NPS APU',           short:'NPS APU',     valKey:'npsApu',         objKey:'objNpsApu' },
-  { key:'npsSupport',     label:'🎧 NPS Support',      short:'NPS Sup',     valKey:'npsSupport',     objKey:'objNpsSupport' },
-  { key:'npsTaa',         label:'🎓 NPS T@A',           short:'NPS T@A',     valKey:'npsTaa',         objKey:'objNpsTaa' },
-  { key:'intros1k',       label:'📲 Intros/1K',         short:'Intros/1K',   valKey:'intros1k',       objKey:'objIntros1k' },
-  { key:'timely',         label:'⏱️ Timely %',          short:'Timely',      valKey:'timely',         objKey:'objTimely' },
-  { key:'cpUsage',        label:'🔗 C&P Usage %',       short:'C&P',         valKey:'cpUsage',        objKey:'objCpUsage' },
-  { key:'gbConv',         label:'📊 GB Conv. %',        short:'GB Conv',     valKey:'gbConv',         objKey:'objGbConv' },
-  { key:'introsSessions', label:'📲 Intros/1K Ses.',   short:'Intros Ses',  valKey:'introsSessions', objKey:'objIntrosSessions' },
-  { key:'iphoneTat',      label:'📱 iPhone TAT',        short:'iPhone TAT',  valKey:'iphoneTat',      objKey:'objIphoneTat' },
-  { key:'upt',            label:'🛍️ UPT',               short:'UPT',         valKey:'upt',            objKey:'objUpt' },
+const KPI_CATALOG = [
+  // ── 💰 Ventas Globales ──
+  { id: 'ventas-totales', zone: 'ventas', label: 'Ventas Totales', icon: '💰', type: 'currency', format: 'auto', unit: '$', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'ventas-business', zone: 'ventas', label: 'Ventas Business', icon: '💼', type: 'currency', format: 'auto', unit: '$', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'ventas-sfs', zone: 'ventas', label: 'Ventas SFS', icon: '🚚', type: 'currency', format: 'auto', unit: '$', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true, extraPct: 'ventas-totales' },
+  { id: 'ventas-apu', zone: 'ventas', label: 'Ventas APU', icon: '📱', type: 'currency', format: 'auto', unit: '$', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true, extraPct: 'ventas-totales' },
+  // ── 📱 Product Zone ──
+  { id: 'ventas-iphone', zone: 'product', label: 'Ventas iPhone', icon: '📱', type: 'integer', format: 'compact', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'ventas-mac', zone: 'product', label: 'Ventas Mac', icon: '💻', type: 'integer', format: 'compact', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'ventas-ipad', zone: 'product', label: 'Ventas iPad', icon: '📋', type: 'integer', format: 'compact', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'trafico', zone: 'product', label: 'Tráfico', icon: '👣', type: 'integer', format: 'compact-k', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'conversion', zone: 'product', label: 'Conversión', icon: '🔄', type: 'pct', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'intros-1k-tx', zone: 'product', label: 'Intros / 1K Transactions', icon: '🎯', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'discussed-ai', zone: 'product', label: 'Discussed Apple Intelligence', icon: '🤖', type: 'pct', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'iphone-sdd-tradein', zone: 'product', label: 'iPhone SDD Trade-in % Drop-in', icon: '🔄', type: 'pct', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'iphone-sdd-applecare', zone: 'product', label: 'iPhone SDD AppleCare Attach % Drop In', icon: '🛡️', type: 'pct', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'iphone-sdd-acc', zone: 'product', label: 'iPhone SDD Accessory Attach % APU', icon: '🎧', type: 'pct', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'sdd-cp-usage', zone: 'product', label: 'SDD C&P Usage % of Eligible Hero Product', icon: '💬', type: 'pct', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  // ── 🔧 Genius Bar ──
+  { id: 'gb-conversion', zone: 'genius', label: 'GB Conversion %', icon: '🔧', type: 'pct', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'intros-1k-sessions', zone: 'genius', label: 'Intros / 1K Sessions', icon: '🔍', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'dta-hrs', zone: 'genius', label: 'DTA (hrs)', icon: '⏰', type: 'integer', unit: 'H', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true, inverse: true },
+  { id: 'iphone-repair-tat', zone: 'genius', label: 'iPhone Repair TAT (mins)', icon: '🔩', type: 'integer', unit: 'mins', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true, inverse: true },
+  // ── 🗂️ Operaciones ──
+  { id: 'run-on-time', zone: 'ops', label: 'Run on Time %', icon: '⏱️', type: 'pct', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'runner-delivered', zone: 'ops', label: 'Runner Delivered Updated %', icon: '📦', type: 'pct', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'inventory-accuracy', zone: 'ops', label: 'Inventory Accuracy %', icon: '📊', type: 'pct', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  // ── 🎓 T@A ──
+  { id: 'taa-avg-attendees', zone: 'taa', label: 'Avg Attendees', icon: '👥', type: 'decimal', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'taa-delivered', zone: 'taa', label: 'Delivered %', icon: '✅', type: 'pct', growth: 'pct', hasObj: true, hasWoW: true, hasYoY: true },
+  // ── 🌟 Experiencia de Cliente — Product Zone ──
+  { id: 'nps-pz', zone: 'cx-pz', label: 'NPS Product Zone', icon: '⭐', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'nps-apu', zone: 'cx-pz', label: 'NPS APU', icon: '📱', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'nps-iphone', zone: 'cx-pz', label: 'NPS iPhone', icon: '📱', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'nps-mac', zone: 'cx-pz', label: 'NPS Mac', icon: '💻', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'nps-ipad', zone: 'cx-pz', label: 'NPS iPad', icon: '📋', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'nps-accesorios', zone: 'cx-pz', label: 'NPS Accesorios', icon: '🎧', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'cx-timely', zone: 'cx-pz', label: 'Timely Assistant', icon: '⏱️', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'cx-facilidad-compra', zone: 'cx-pz', label: 'Facilidad de compra / Recogida', icon: '🛒', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'cx-recorrido-prestacion', zone: 'cx-pz', label: 'Recorrido del cliente: Le enseñaron una prestación', icon: '🎓', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'cx-pz-tradein', zone: 'cx-pz', label: 'Opciones de compra: Le ofrecieron Apple Trade In', icon: '🔄', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  // ── 🌟 Experiencia de Cliente — Genius Bar ──
+  { id: 'nps-gb', zone: 'cx-gb', label: 'NPS Genius Bar', icon: '🔧', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'nps-con-cita', zone: 'cx-gb', label: 'NPS con Cita', icon: '📅', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'nps-sin-cita', zone: 'cx-gb', label: 'NPS sin Cita', icon: '🚶', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'cx-gb-registro', zone: 'cx-gb', label: 'Facilidad de registro al llegar', icon: '📋', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'cx-gb-espera', zone: 'cx-gb', label: 'Tiempo de espera', icon: '⏰', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'cx-gb-tradein', zone: 'cx-gb', label: 'Opciones de compra: Le ofrecieron Apple Trade In', icon: '🔄', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  { id: 'cx-gb-opcion-compra', zone: 'cx-gb', label: 'Opciones de compra: Le ofrecieron alguna opción de compra', icon: '🛍️', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
+  // ── 🌟 Experiencia de Cliente — T@A ──
+  { id: 'nps-taa', zone: 'cx-taa', label: 'NPS T@A', icon: '🎓', type: 'integer', growth: 'pts', hasObj: true, hasWoW: true, hasYoY: true },
 ];
-const RESUMEN_KPIS_KEY = 'apg_resumen_kpis';
-const RESUMEN_KPIS_DEFAULT = ['ventas','nps','conv','trafico','dta'];
-const MAX_RESUMEN_KPIS = 5;
+
+const KPI_ZONES = [
+  { id: 'ventas',  label: '💰 Ventas Globales',                       order: 1 },
+  { id: 'product', label: '📱 Product Zone',                          order: 2 },
+  { id: 'genius',  label: '🔧 Genius Bar',                            order: 3 },
+  { id: 'ops',     label: '🗂️ Operaciones',                           order: 4 },
+  { id: 'taa',     label: '🎓 T@A',                                   order: 5 },
+  { id: 'cx-pz',   label: '🌟 Experiencia de Cliente — Product Zone', order: 6 },
+  { id: 'cx-gb',   label: '🌟 Experiencia de Cliente — Genius Bar',   order: 7 },
+  { id: 'cx-taa',  label: '🌟 Experiencia de Cliente — T@A',          order: 8 },
+];
+
+const KPI_HIGHLIGHTED = ['ventas-totales', 'ventas-apu', 'conversion', 'sdd-cp-usage', 'nps-apu'];
+
+/* Derived RESUMEN catalog — used by Mis KPIs selector and radar chart */
+const RESUMEN_KPI_CATALOG = KPI_CATALOG.map(k => ({
+  key:    k.id,
+  label:  k.icon + ' ' + k.label,
+  short:  k.label.length > 14 ? k.label.substring(0, 14) + '…' : k.label,
+  valKey: k.id,
+  objKey: k.id + '_obj',
+}));
+const RESUMEN_KPIS_KEY     = 'apg_resumen_kpis';
+const RESUMEN_KPIS_DEFAULT = KPI_HIGHLIGHTED.slice(0, 5);
+const MAX_RESUMEN_KPIS     = 5;
+
+function _kpiZoneColor(zone) {
+  const map = { ventas:'var(--accent)', product:'#30d158', genius:'#0a84ff', ops:'#5e5ce6', taa:'#bf5af2', 'cx-pz':'#ffd60a', 'cx-gb':'#ff9f0a', 'cx-taa':'#64d2ff' };
+  return map[zone] || 'var(--accent)';
+}
+const KPI_CHART_MAX_PCT = 150;
+const KPI_CHART_METRICS = KPI_CATALOG.filter(k => k.hasObj).map(k => ({
+  key:   k.id,
+  label: k.icon + ' ' + k.label,
+  color: _kpiZoneColor(k.zone),
+  val:   d => {
+    const v = num(d[k.id]), o = num(d[k.id + '_obj']);
+    if (k.inverse) return o > 0 && v > 0 ? Math.min(o / v * 100, KPI_CHART_MAX_PCT) : 0;
+    return o > 0 ? Math.min(v / o * 100, KPI_CHART_MAX_PCT) : 0;
+  },
+}));
+const DEFAULT_KPI_CHART_METRICS   = ['ventas-totales', 'conversion'];
+const DEFAULT_COMPARATIVA_METRICS = ['ventas-totales', 'conversion', 'dta-hrs', 'nps-pz'];
 
 loadKPIs();
+renderKPIPage();
 renderTasks(); renderTeam(); renderEvents();
 // Populate manager dropdown in event creation form
 (function _populateManagerDropdown() {
@@ -5795,14 +5797,14 @@ function _parseOCRKPIs(text) {
     const chunk = norm.substring(start, end);
     const d = extractSection(chunk);
     if (positions[i].key === 'total') {
-      if (d.sales) setField('kpi-ventas', d.sales, `Ventas Totales: ${d.sales}`);
-      if (d.yoy)   setField('kpi-yoy-ventas', d.yoy, `YoY Ventas: ${d.yoy}%`);
+      if (d.sales) setField('kv-ventas-totales', d.sales, `Ventas Totales: ${d.sales}`);
+      if (d.yoy)   setField('ky-ventas-totales', d.yoy, `YoY Ventas: ${d.yoy}%`);
     } else if (positions[i].key === 'business') {
-      if (d.sales) setField('kpi-ventas-business', d.sales, `Ventas Business: ${d.sales}`);
-      if (d.yoy)   setField('kpi-yoy-ventas-business', d.yoy, `YoY Business: ${d.yoy}%`);
+      if (d.sales) setField('kv-ventas-business', d.sales, `Ventas Business: ${d.sales}`);
+      if (d.yoy)   setField('ky-ventas-business', d.yoy, `YoY Business: ${d.yoy}%`);
     } else if (positions[i].key === 'web') {
-      if (d.sales) setField('kpi-ventas-sfs', d.sales, `Ventas Web/SFS: ${d.sales}`);
-      if (d.yoy)   setField('kpi-yoy-ventas-sfs', d.yoy, `YoY Web/SFS: ${d.yoy}%`);
+      if (d.sales) setField('kv-ventas-sfs', d.sales, `Ventas Web/SFS: ${d.sales}`);
+      if (d.yoy)   setField('ky-ventas-sfs', d.yoy, `YoY Web/SFS: ${d.yoy}%`);
     }
   }
 
@@ -5813,15 +5815,15 @@ function _parseOCRKPIs(text) {
   if (!filled.some(f => f.startsWith('Ventas Totales'))) {
     const tm = norm.match(/Total\s+Sales[^\d$€]*([$€]?\s*[\d.,]+)\s*([MmKkBb])?\s*(-?\d+(?:[.,]\d+)?)\s*%?/i);
     if (tm) {
-      setField('kpi-ventas', _ocrNormNum(tm[1].replace(/[$€\s]/g, '')), `Ventas Totales: ${_ocrNormNum(tm[1].replace(/[$€\s]/g, ''))}`);
-      if (tm[3]) setField('kpi-yoy-ventas', _ocrNormNum(tm[3]), `YoY Ventas: ${_ocrNormNum(tm[3])}%`);
+      setField('kv-ventas-totales', _ocrNormNum(tm[1].replace(/[$€\s]/g, '')), `Ventas Totales: ${_ocrNormNum(tm[1].replace(/[$€\s]/g, ''))}`);
+      if (tm[3]) setField('ky-ventas-totales', _ocrNormNum(tm[3]), `YoY Ventas: ${_ocrNormNum(tm[3])}%`);
     }
   }
 
   // Fallback: any "Sales" or "Ventas" if still not filled
   if (!filled.some(f => f.startsWith('Ventas Totales'))) {
     const fm = norm.match(/(?:Ventas|Sales|Revenue|Facturación)[^\d$€]*([$€]?\s*[\d.,]+)\s*[MmKkBb]?/i);
-    if (fm) setField('kpi-ventas', _ocrNormNum(fm[1].replace(/[$€\s]/g, '')), `Ventas Totales: ${_ocrNormNum(fm[1].replace(/[$€\s]/g, ''))}`);
+    if (fm) setField('kv-ventas-totales', _ocrNormNum(fm[1].replace(/[$€\s]/g, '')), `Ventas Totales: ${_ocrNormNum(fm[1].replace(/[$€\s]/g, ''))}`);
   }
 
   /* ══════════════════════════════════════════════
@@ -5830,7 +5832,7 @@ function _parseOCRKPIs(text) {
 
   // NPS
   const npsM = norm.match(/(?:NPS|Net\s+Promoter)[^\d]*(-?\d+(?:[.,]\d+)?)/i);
-  if (npsM) setField('kpi-nps', _ocrNormNum(npsM[1]), `NPS: ${_ocrNormNum(npsM[1])}`);
+  if (npsM) setField('kv-nps-pz', _ocrNormNum(npsM[1]), `NPS: ${_ocrNormNum(npsM[1])}`);
 
   // AppleCare / AC+
   const acM = norm.match(/(?:AppleCare|AC\+|Attachment\s*Rate)[^\d]*([\d.,]+)\s*%?/i);
@@ -5838,15 +5840,15 @@ function _parseOCRKPIs(text) {
 
   // Traffic / Tráfico
   const trM = norm.match(/(?:Traffic|Tr[aá]fico)[^\d]*([\d.,]+)/i);
-  if (trM) setField('kpi-trafico', _ocrNormNum(trM[1]), `Tráfico: ${_ocrNormNum(trM[1])}`);
+  if (trM) setField('kv-trafico', _ocrNormNum(trM[1]), `Tráfico: ${_ocrNormNum(trM[1])}`);
 
   // Conversion / Conversión
   const cvM = norm.match(/(?:Conversion|Conversi[oó]n)[^\d]*([\d.,]+)\s*%?/i);
-  if (cvM) setField('kpi-conv', _ocrNormNum(cvM[1]), `Conversión: ${_ocrNormNum(cvM[1])}%`);
+  if (cvM) setField('kv-conversion', _ocrNormNum(cvM[1]), `Conversión: ${_ocrNormNum(cvM[1])}%`);
 
   // DTA
   const dtaM = norm.match(/(?:DTA|Days?\s+to\s+Action)[^\d]*([\d.,]+)/i);
-  if (dtaM) setField('kpi-dta', _ocrNormNum(dtaM[1]), `DTA: ${_ocrNormNum(dtaM[1])}`);
+  if (dtaM) setField('kv-dta-hrs', _ocrNormNum(dtaM[1]), `DTA: ${_ocrNormNum(dtaM[1])}`);
 
   // UPT
   const uptM = norm.match(/(?:UPT|Units?\s+(?:Per|por)\s+Trans)[^\d]*([\d.,]+)/i);
@@ -5854,23 +5856,23 @@ function _parseOCRKPIs(text) {
 
   // Intros per 1K
   const i1kM = norm.match(/(?:Intros?\s*(?:per|\/)\s*1\s*[Kk]|Intros?\s*1000)[^\d]*([\d.,]+)/i);
-  if (i1kM) setField('kpi-intros-1k', _ocrNormNum(i1kM[1]), `Intros/1K: ${_ocrNormNum(i1kM[1])}`);
+  if (i1kM) setField('kv-intros-1k-tx', _ocrNormNum(i1kM[1]), `Intros/1K: ${_ocrNormNum(i1kM[1])}`);
 
   // Timely Greet
   const tiM = norm.match(/(?:Timely\s*(?:Greet)?|Saludo\s*oportuno)[^\d]*([\d.,]+)\s*%?/i);
-  if (tiM) setField('kpi-timely', _ocrNormNum(tiM[1]), `Timely: ${_ocrNormNum(tiM[1])}%`);
+  if (tiM) setField('kv-run-on-time', _ocrNormNum(tiM[1]), `Timely: ${_ocrNormNum(tiM[1])}%`);
 
   // Customer Proposals Usage / CP Usage
   const cpM = norm.match(/(?:CP\s*Usage|Customer\s*Proposal)[^\d]*([\d.,]+)\s*%?/i);
-  if (cpM) setField('kpi-cp-usage', _ocrNormNum(cpM[1]), `CP Usage: ${_ocrNormNum(cpM[1])}%`);
+  if (cpM) setField('kv-sdd-cp-usage', _ocrNormNum(cpM[1]), `CP Usage: ${_ocrNormNum(cpM[1])}%`);
 
   // Genius Bar Conversion
   const gbM = norm.match(/(?:GB\s*Conv|Genius\s*(?:Bar\s*)?Conv)[^\d]*([\d.,]+)\s*%?/i);
-  if (gbM) setField('kpi-gb-conv', _ocrNormNum(gbM[1]), `GB Conv: ${_ocrNormNum(gbM[1])}%`);
+  if (gbM) setField('kv-gb-conversion', _ocrNormNum(gbM[1]), `GB Conv: ${_ocrNormNum(gbM[1])}%`);
 
   // iPhone TAT
   const tatM = norm.match(/(?:iPhone\s*TAT|iPhone\s*Turn\s*Around)[^\d]*([\d.,]+)/i);
-  if (tatM) setField('kpi-iphone-tat', _ocrNormNum(tatM[1]), `iPhone TAT: ${_ocrNormNum(tatM[1])}`);
+  if (tatM) setField('kv-iphone-repair-tat', _ocrNormNum(tatM[1]), `iPhone TAT: ${_ocrNormNum(tatM[1])}`);
 
   return filled;
 }
@@ -7630,6 +7632,7 @@ function renderResumenKPIs() {
   const cards = selection.map(key => {
     const def = RESUMEN_KPI_CATALOG.find(c => c.key === key);
     if (!def) return '';
+    const kpiDef = KPI_CATALOG.find(k => k.id === def.key);
     const val = kpis[def.valKey];
     const obj = kpis[def.objKey];
     const v = num(val), o = num(obj);
@@ -7638,7 +7641,7 @@ function renderResumenKPIs() {
     const barWidth = Math.min(pct, 100);
     return `<div class="resumen-kpi-card">
       <div class="resumen-kpi-label">${def.label}</div>
-      <div class="resumen-kpi-value" style="color:${color}">${val || '—'}</div>
+      <div class="resumen-kpi-value" style="color:${color}">${kpiDef ? formatKPIValue(val, kpiDef) : (val || '—')}</div>
       <div class="resumen-kpi-obj">Obj: ${obj || '—'}</div>
       <div class="resumen-kpi-bar-wrap"><div class="resumen-kpi-bar-fill" style="width:${barWidth}%;background:${color}"></div></div>
       <div class="resumen-kpi-pct" style="color:${color}">${o > 0 ? pct + '%' : '—'}</div>
@@ -7900,16 +7903,12 @@ function renderKPIHealthSummary() {
   const wrap = document.getElementById('kpi-health-summary');
   if (!wrap) return;
   const kpis = load(K.kpis, {});
-  const allKPIs = [
-    { key: 'ventas', label: 'Ventas',   val: num(kpis.ventas),   obj: num(kpis.objVentas) },
-    { key: 'nps',    label: 'NPS',      val: num(kpis.nps),      obj: num(kpis.objNps) },
-    { key: 'dta',    label: 'DTA',      val: num(kpis.dta),      obj: num(kpis.objDta) },
-    { key: 'conv',   label: 'Conv.',    val: num(kpis.conv),     obj: num(kpis.objConv) },
-    { key: 'trafico',label: 'Tráfico',  val: num(kpis.trafico),  obj: num(kpis.objTrafico) },
-    { key: 'npsShop',label: 'NPS Shop', val: num(kpis.npsShop),  obj: num(kpis.objNpsShop) },
-    { key: 'npsApu', label: 'NPS APU',  val: num(kpis.npsApu),   obj: num(kpis.objNpsApu) },
-    { key: 'npsSupport',label:'NPS Sup',val: num(kpis.npsSupport),obj: num(kpis.objNpsSupport) },
-  ].filter(k => k.obj > 0);
+  const allKPIs = KPI_CATALOG.filter(k => k.hasObj).map(k => ({
+    key:   k.id,
+    label: k.label,
+    val:   num(kpis[k.id]),
+    obj:   num(kpis[k.id + '_obj']),
+  })).filter(k => k.obj > 0);
   if (!allKPIs.length) { wrap.innerHTML = ''; return; }
 
   let green = 0, yellow = 0, red = 0;
@@ -7939,10 +7938,10 @@ function renderKPISmartInsights() {
 
   /* Best and worst KPI */
   const metrics = [
-    { key: 'ventas', label: 'Ventas',    val: num(kpis.ventas),    obj: num(kpis.objVentas) },
-    { key: 'nps',    label: 'NPS',       val: num(kpis.nps),       obj: num(kpis.objNps) },
-    { key: 'conv',   label: 'Conversión',val: num(kpis.conv),      obj: num(kpis.objConv) },
-    { key: 'trafico',label: 'Tráfico',   val: num(kpis.trafico),   obj: num(kpis.objTrafico) },
+    { key: 'ventas-totales', label: 'Ventas',     val: num(kpis['ventas-totales']),    obj: num(kpis['ventas-totales_obj']) },
+    { key: 'nps-pz',         label: 'NPS',         val: num(kpis['nps-pz']),            obj: num(kpis['nps-pz_obj']) },
+    { key: 'conversion',     label: 'Conversión',  val: num(kpis['conversion']),         obj: num(kpis['conversion_obj']) },
+    { key: 'trafico',        label: 'Tráfico',     val: num(kpis['trafico']),            obj: num(kpis['trafico_obj']) },
   ].filter(m => m.obj > 0);
 
   if (metrics.length) {
@@ -7955,8 +7954,8 @@ function renderKPISmartInsights() {
   }
 
   /* WoW improvement */
-  if (num(kpis.wowVentas) > 0) {
-    const diff = ((num(kpis.ventas) - num(kpis.wowVentas)) / num(kpis.wowVentas) * 100).toFixed(1);
+  if (num(kpis['ventas-totales_wow']) > 0) {
+    const diff = ((num(kpis['ventas-totales']) - num(kpis['ventas-totales_wow'])) / num(kpis['ventas-totales_wow']) * 100).toFixed(1);
     if (diff > 5) tips.push({ icon: '📈', text: `Ventas <strong>+${diff}%</strong> vs semana anterior — ¡buen momentum!`, type: 'positive' });
     else if (diff < -5) tips.push({ icon: '📉', text: `Ventas <strong>${diff}%</strong> vs semana anterior — identifica la causa`, type: 'warning' });
   }
@@ -7964,10 +7963,10 @@ function renderKPISmartInsights() {
   /* History-based projection */
   if (history.length >= 3) {
     const recent = history.slice(-3);
-    const ventasTrend = recent.map(h => num(h.ventas));
+    const ventasTrend = recent.map(h => num(h['ventas-totales']));
     const avgChange = (ventasTrend[2] - ventasTrend[0]) / 2;
-    if (avgChange > 0 && num(kpis.objVentas) > 0) {
-      const weeksToTarget = num(kpis.objVentas) > num(kpis.ventas) ? Math.ceil((num(kpis.objVentas) - num(kpis.ventas)) / avgChange) : 0;
+    if (avgChange > 0 && num(kpis['ventas-totales_obj']) > 0) {
+      const weeksToTarget = num(kpis['ventas-totales_obj']) > num(kpis['ventas-totales']) ? Math.ceil((num(kpis['ventas-totales_obj']) - num(kpis['ventas-totales'])) / avgChange) : 0;
       if (weeksToTarget > 0 && weeksToTarget <= 4) tips.push({ icon: '🔮', text: `Al ritmo actual, alcanzarás el objetivo de ventas en ~${weeksToTarget} semana${weeksToTarget > 1 ? 's' : ''}`, type: 'info' });
     }
   }
