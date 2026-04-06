@@ -1,6 +1,6 @@
 // Incrementar CACHE_NAME manualmente con cada release que modifique archivos JS
 // para que el Service Worker invalide el caché en todos los dispositivos.
-const CACHE_NAME = 'apg-dashboard-v5';
+const CACHE_NAME = 'apg-dashboard-v6';
 const ASSETS = [
   './',
   './index.html',
