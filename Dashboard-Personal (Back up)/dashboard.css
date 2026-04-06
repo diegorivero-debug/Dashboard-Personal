@@ -2420,6 +2420,14 @@
 /* ══════════════════════════════════════════
    SETTINGS MODAL (index.html)
 ══════════════════════════════════════════ */
+.settings-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 500;
+  backdrop-filter: blur(4px);
+}
 .settings-modal {
   position: fixed;
   top: 0;
@@ -2543,6 +2551,84 @@
 .settings-accent-dot.active {
   border-color: var(--text-primary);
   transform: scale(1.15);
+}
+
+/* ── Import confirm modal (generated dynamically in JS) ── */
+.apg-import-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.apg-import-confirm-box {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 28px 24px;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+.apg-import-confirm-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.apg-import-confirm-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.apg-import-confirm-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.apg-import-confirm-warn {
+  font-size: 12px;
+  color: #ff9f0a;
+  margin-bottom: 18px;
+}
+.apg-import-confirm-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.apg-import-cancel-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.apg-import-cancel-btn:hover { background: var(--surface2); }
+.apg-import-ok-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.apg-import-ok-btn:hover { opacity: 0.88; }
+
+/* ── Settings card as button — reset default button appearance ── */
+button.index-card {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* ── QBR ── */

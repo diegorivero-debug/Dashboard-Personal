@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════
    DATA LAYER
 ═══════════════════════════════════════════════ */
-const K = { theme:'apg_theme', tasks:'apg_tasks', team:'apg_team', events:'apg_events', notes:'apg_notes', kpis:'apg_kpis', reuniones:'apg_reuniones', tbs:'apg_tbs', kpiHistory:'apg_kpi_history', reconocimientos:'apg_reconocimientos', agendaView:'apg_agenda_view', agendaWeekOffset:'apg_agenda_week_offset', briefingDate:'apg_briefing_date', customQuotes:'apg_custom_quotes', kanban:'apg_team_kanban', comparativaOpen:'apg_comparativa_open', agendaMonthOffset:'apg_agenda_month_offset', pdis:'apg_pdis', agendaGoals:'apg_agenda_goals',
+const K = { theme:'apg_theme', tasks:'apg_tasks', team:'apg_team', events:'apg_events', notes:'apg_notes', kpis:'apg_kpis', reuniones:'apg_reuniones', tbs:'apg_tbs', kpiHistory:'apg_kpi_history', reconocimientos:'apg_reconocimientos', agendaView:'apg_agenda_view', agendaWeekOffset:'apg_agenda_week_offset', briefingDate:'apg_briefing_date', briefingDates:'apg_briefing_dates', customQuotes:'apg_custom_quotes', kanban:'apg_team_kanban', comparativaOpen:'apg_comparativa_open', agendaMonthOffset:'apg_agenda_month_offset', pdis:'apg_pdis', agendaGoals:'apg_agenda_goals',
   pulse:'apg_pulse',   /* PR3 Feature 2: Pulse Check semanal — array de {id,weekStart,energy,momentum,climate,tensions,createdAt} */
   launch:'apg_launch', /* PR3 Feature 3: Modo Lanzamiento — {enabled,title,launchDateTime,checklist,dayKpis,postReview,updatedAt} */
   focusMetric:'apg_focus_metric',  /* K4 · Focus Metric de la Semana — {metric,hypothesis,reflection,updatedAt} */
@@ -3837,7 +3837,20 @@ function _briefingGetTeamAbsencesToday(year, today) {
 
 function closeBriefing() {
   document.getElementById('briefing-overlay').classList.remove('active');
-  save(K.briefingDate, new Date().toISOString().slice(0,10));
+  const today = new Date().toISOString().slice(0,10);
+  save(K.briefingDate, today);
+  // Maintain a dates-history array for accurate streak calculation in index.html
+  try {
+    const dates = load(K.briefingDates, []);
+    if (!dates.includes(today)) {
+      dates.unshift(today);
+      // Keep only last 90 days to avoid unbounded growth
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      const cutoffStr = cutoff.toISOString().slice(0,10);
+      save(K.briefingDates, dates.filter(d => d >= cutoffStr));
+    }
+  } catch(_) {}
 }
 
 /* ═══════════════════════════════════════════════

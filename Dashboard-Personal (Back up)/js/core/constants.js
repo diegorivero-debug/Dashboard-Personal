@@ -18,6 +18,7 @@ export const K = {
   agendaView:           'apg_agenda_view',
   agendaWeekOffset:     'apg_agenda_week_offset',
   briefingDate:         'apg_briefing_date',
+  briefingDates:        'apg_briefing_dates',
   customQuotes:         'apg_custom_quotes',
   kanban:               'apg_team_kanban',
   comparativaOpen:      'apg_comparativa_open',
