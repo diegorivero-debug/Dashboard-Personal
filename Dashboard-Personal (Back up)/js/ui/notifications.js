@@ -250,3 +250,43 @@ export function renderNotifications() {
     <button class="notif-go" onclick="switchTab('${a.tab}');document.getElementById('notif-panel').classList.remove('open')">Ver →</button>
   </div>`).join('');
 }
+
+const _TAB_URLS={
+  tareas:'dashboard.html?seccion=operativa',
+  equipo:'dashboard.html?seccion=equipo',
+  reuniones:'dashboard.html?seccion=operativa',
+  kpis:'dashboard.html?seccion=negocio',
+  resumen:'dashboard.html?seccion=negocio',
+  feedback:'dashboard.html?seccion=equipo',
+};
+
+export function updateNotifBadgeForHome() {
+  const alerts=getAlertsForHome();
+  const badge=document.getElementById('notif-badge');
+  if(badge){
+    if(alerts.length>0){ badge.style.display='flex'; badge.textContent=alerts.length; } else { badge.style.display='none'; }
+  }
+}
+export function renderNotificationsForHome() {
+  const items=document.getElementById('notif-items'); if(!items) return;
+  const alerts=getAlertsForHome();
+  updateNotifBadgeForHome();
+  if(!alerts.length){
+    items.innerHTML=`<div class="notif-empty">✅ Todo en orden<br><span style="font-size:12px;margin-top:4px;display:block">No hay alertas pendientes. ¡Buen trabajo!</span></div>`;
+    return;
+  }
+  items.innerHTML=alerts.map(a=>{
+    const url=a.tab?(_TAB_URLS[a.tab]||'dashboard.html'):null;
+    const btn=url?`<a class="notif-go" href="${url}">Ver →</a>`:'';
+    return `<div class="notif-item">
+    <div class="notif-icon">${a.icon}</div>
+    <div class="notif-text">${esc(a.text)}</div>
+    ${btn}
+  </div>`;
+  }).join('');
+}
+export function toggleNotificationsForHome() {
+  const panel=document.getElementById('notif-panel'); if(!panel) return;
+  const isOpen=panel.classList.toggle('open');
+  if(isOpen) renderNotificationsForHome();
+}

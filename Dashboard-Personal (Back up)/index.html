@@ -20,17 +20,14 @@
     <div class="store-name">Apple Passeig de Gràcia</div>
     <div class="store-role">Store Leader · Diego Rivero</div>
   </div>
-  <button class="hw-notif-bell" id="hw-notif-bell" onclick="toggleHomeNotifs()" title="Alertas">
-    🔔 <span class="hw-notif-badge" id="hw-notif-badge" style="display:none">0</span>
+  <button class="notif-btn" id="notif-btn" onclick="toggleNotifications()" title="Alertas">
+    🔔 <span class="notif-badge" id="notif-badge" style="display:none">0</span>
   </button>
 </header>
 
-<div class="hw-notif-panel" id="hw-notif-panel">
-  <div class="hw-notif-header">
-    <span>🔔 Centro de alertas</span>
-    <button onclick="toggleHomeNotifs()">✕</button>
-  </div>
-  <div class="hw-notif-items" id="hw-notif-items"></div>
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-panel-header">🔔 Centro de alertas</div>
+  <div id="notif-items"></div>
 </div>
 
 <main class="index-main">
@@ -455,6 +452,7 @@
 <script type="module">
   import { FISCAL_QUARTERS, DIAS, MESES, K, DEFAULT_QUOTES } from './js/core/constants.js';
   import { load, esc, parseNum, daysDiff, localDateStr } from './js/core/utils.js';
+  import { updateNotifBadgeForHome, toggleNotificationsForHome } from './js/ui/notifications.js';
 
   // ── INFO FISCAL ─────────────────────────────────────────────────────────────
 
@@ -723,227 +721,13 @@
 
   // ── NOTIFICACIONES ───────────────────────────────────────────────────────────
 
-  function _sortAlerts(alerts) {
-    const order = { high:0, medium:1, low:2 };
-    return alerts.slice().sort((a,b) => (order[a.priority]??2) - (order[b.priority]??2));
-  }
-
-  function getAlertsForHome() {
-    const alerts = [];
-    const today = new Date();
-    const todayStr = localDateStr(today);
-    const MS_PER_DAY = 86400 * 1000;
-
-    /* ── Existing rules (DOM-free) ── */
-
-    // Tareas vencidas → high
-    try {
-      const tasks = load(K.tasks, []);
-      const overdue = tasks.filter(t => !t.done && t.date && t.date < todayStr);
-      if (overdue.length) alerts.push({ icon:'⚠️', text:`${overdue.length} tarea(s) vencida(s)`, tab:'tareas', priority:'high' });
-    } catch(_) {}
-
-    // Seguimiento pendiente TB → medium
-    try {
-      const tbs  = load(K.tbs, {});
-      const team = load(K.team, []);
-      Object.entries(tbs).forEach(([mid, sessions]) => {
-        const pending = sessions.filter(s => s.followUp && !s.followUpDone);
-        if (pending.length) {
-          const member = team.find(m => m.id === parseInt(mid));
-          alerts.push({ icon:'⏳', text:`Seguimiento pendiente con ${member ? member.name : 'un miembro'}`, tab:'equipo', priority:'medium' });
-        }
-      });
-    } catch(_) {}
-
-    // Reunión sin acta → medium
-    try {
-      const now = Date.now();
-      const reuniones = load(K.reuniones, []);
-      reuniones.filter(r => r.status === 'Completada' && r.datetime).forEach(r => {
-        const dt = new Date(r.datetime).getTime();
-        if (now - dt < 48*3600*1000 && !r.notes && (!r.agreements || !r.agreements.length)) {
-          alerts.push({ icon:'📝', text:`${r.title} sin acta`, tab:'reuniones', priority:'medium' });
-        }
-      });
-    } catch(_) {}
-
-    // Reconocimientos +14 días → low
-    try {
-      const team  = load(K.team, []);
-      const recogs = load(K.reconocimientos, []);
-      const visible = team.filter(m => !m.hidden);
-      if (visible.length) {
-        const overdueMembers = visible.filter(m => {
-          const last = recogs.filter(r => r.personId === m.id).sort((a,b) => b.date.localeCompare(a.date))[0];
-          if (!last) return true;
-          return Math.floor((new Date(todayStr) - new Date(last.date)) / MS_PER_DAY) > 14;
-        });
-        if (overdueMembers.length) alerts.push({ icon:'🏆', text:`Reconocer: ${overdueMembers.length} persona${overdueMembers.length>1?'s':''} lleva${overdueMembers.length>1?'n':''} +14 días sin reconocimiento`, tab:'equipo', priority:'low' });
-      } else if (!recogs.length) {
-        alerts.push({ icon:'🏆', text:'Aún no hay reconocimientos registrados', tab:'equipo', priority:'low' });
-      }
-    } catch(_) {}
-
-    // Ventas bajo objetivo (desde localStorage) → high
-    try {
-      const kpis = load(K.kpis, null);
-      if (kpis) {
-        const v = parseNum(kpis.ventas);
-        const o = parseNum(kpis.objVentas);
-        if (o > 0 && v/o < 0.7) alerts.push({ icon:'📉', text:`Ventas al ${Math.round(v/o*100)}% del objetivo`, tab:'kpis', priority:'high' });
-      }
-    } catch(_) {}
-
-    /* ── New rules ── */
-
-    // 1. 👥 1:1 sin realizar en +14 días → high
-    try {
-      const tbs  = load(K.tbs, {});
-      const team = load(K.team, []);
-      const visible = team.filter(m => !m.hidden);
-      const pending11 = visible.filter(m => {
-        const sessions = tbs[m.id] || [];
-        if (!sessions.length) return true;
-        const lastDate = sessions.map(s => s.date).filter(Boolean).sort().pop();
-        if (!lastDate) return true;
-        return daysDiff(lastDate, today) > 14;
-      });
-      if (pending11.length > 3) {
-        alerts.push({ icon:'👥', text:`${pending11.length} personas sin 1:1 en +14 días`, tab:'equipo', priority:'high' });
-      } else {
-        pending11.forEach(m => {
-          const sessions = tbs[m.id] || [];
-          const lastDate = sessions.map(s => s.date).filter(Boolean).sort().pop();
-          const days = lastDate ? daysDiff(lastDate, today) : null;
-          const suffix = days != null ? ` (+${days} días)` : '';
-          alerts.push({ icon:'👥', text:`1:1 pendiente con ${m.name}${suffix}`, tab:'equipo', priority:'high' });
-        });
-      }
-    } catch(_) {}
-
-    // 2. 📉 KPIs bajaron >5% vs semana anterior → high
-    try {
-      const kpiHistory = load(K.kpiHistory, []);
-      if (kpiHistory.length >= 2) {
-        const sorted = [...kpiHistory].sort((a,b) => (a.date||'').localeCompare(b.date||''));
-        const prev = sorted[sorted.length - 2];
-        const last = sorted[sorted.length - 1];
-        const vPrev = parseNum(prev.ventas), oPrev = parseNum(prev.objVentas);
-        const vLast = parseNum(last.ventas), oLast = parseNum(last.objVentas);
-        const pctPrev = oPrev > 0 ? vPrev / oPrev : null;
-        const pctLast = oLast > 0 ? vLast / oLast : null;
-        if (pctPrev != null && pctLast != null && pctPrev > 0) {
-          const drop = ((pctPrev - pctLast) / pctPrev) * 100;
-          if (drop > 5) alerts.push({ icon:'📉', text:`Ventas bajaron un ${Math.round(drop)}% vs semana anterior`, tab:'kpis', priority:'high' });
-        }
-      }
-    } catch(_) {}
-
-    // 3. 💾 Backup no realizado en +7 días → low
-    try {
-      const lastBackup = parseInt(localStorage.getItem('apg_last_backup') || '0', 10);
-      if (!lastBackup) {
-        alerts.push({ icon:'💾', text:'No has hecho backup nunca', tab:null, priority:'low' });
-      } else {
-        const backupDays = Math.floor((Date.now() - lastBackup) / MS_PER_DAY);
-        if (backupDays > 7) alerts.push({ icon:'💾', text:`No has hecho backup en ${backupDays} días`, tab:null, priority:'low' });
-      }
-    } catch(_) {}
-
-    // 4. 📅 Reuniones de hoy sin briefing → medium
-    try {
-      const events = load(K.events, []);
-      const todayEvents = events.filter(ev => ev.date === todayStr);
-      const briefingDate = load(K.briefingDate, null);
-      if (todayEvents.length > 0 && briefingDate !== todayStr) {
-        alerts.push({ icon:'📅', text:`Tienes ${todayEvents.length} reunión${todayEvents.length>1?'es':''} hoy y no has hecho el briefing`, tab:'resumen', priority:'medium' });
-      }
-    } catch(_) {}
-
-    // 5. 🎯 Ventas entre 85-99% del objetivo → medium
-    try {
-      const kpis = load(K.kpis, null);
-      if (kpis) {
-        const v = parseNum(kpis.ventas);
-        const o = parseNum(kpis.objVentas);
-        if (o > 0) {
-          const p = v / o * 100;
-          if (p >= 85 && p < 100) alerts.push({ icon:'🎯', text:`¡Ventas al ${Math.round(p)}% del objetivo — un último empujón!`, tab:'kpis', priority:'medium' });
-        }
-      }
-    } catch(_) {}
-
-    // 6. 💬 Sin feedback SBI en +14 días → low
-    try {
-      const sbiHistory = load('apg_sbi_history', []);
-      if (!sbiHistory.length) {
-        alerts.push({ icon:'💬', text:'Llevas +14 días sin registrar feedback SBI', tab:'feedback', priority:'low' });
-      } else {
-        const lastSbi = sbiHistory[0];
-        if (lastSbi && lastSbi.date) {
-          const sbiDays = daysDiff(lastSbi.date, today);
-          if (sbiDays > 14) alerts.push({ icon:'💬', text:'Llevas +14 días sin registrar feedback SBI', tab:'feedback', priority:'low' });
-        }
-      }
-    } catch(_) {}
-
-    return _sortAlerts(alerts);
-  }
-
-  const TAB_URLS = {
-    tareas:    'dashboard.html?seccion=operativa',
-    equipo:    'dashboard.html?seccion=equipo',
-    reuniones: 'dashboard.html?seccion=operativa',
-    kpis:      'dashboard.html?seccion=negocio',
-    resumen:   'dashboard.html?seccion=negocio',
-    feedback:  'dashboard.html?seccion=equipo',
-    null:      null,
-  };
-
-  const PRIORITY_LABEL = { high:'Alta', medium:'Media', low:'Baja' };
-
-  function renderHomeNotifs() {
-    const alerts = getAlertsForHome();
-    const badge  = document.getElementById('hw-notif-badge');
-    const items  = document.getElementById('hw-notif-items');
-
-    if (badge) {
-      if (alerts.length > 0) { badge.style.display = 'flex'; badge.textContent = alerts.length; }
-      else { badge.style.display = 'none'; }
-    }
-
-    if (!items) return;
-    if (!alerts.length) {
-      items.innerHTML = '<div class="hw-notif-empty">✅ Todo en orden<br><span>No hay alertas pendientes. ¡Buen trabajo!</span></div>';
-      return;
-    }
-
-    items.innerHTML = alerts.map(a => {
-      const url = a.tab ? (TAB_URLS[a.tab] || 'dashboard.html') : null;
-      const btn  = url ? `<a class="hw-notif-go" href="${url}">Ver →</a>` : '';
-      return `<div class="hw-notif-item hw-notif-${a.priority}">
-        <span class="hw-notif-icon">${a.icon}</span>
-        <span class="hw-notif-text">${esc(a.text)}</span>
-        ${btn}
-      </div>`;
-    }).join('');
-  }
-
-  window.toggleHomeNotifs = function() {
-    const panel = document.getElementById('hw-notif-panel');
-    if (!panel) return;
-    const isOpen = panel.classList.toggle('open');
-    if (isOpen) renderHomeNotifs();
-  };
-
-  // Render badge on load (don't open panel)
-  renderHomeNotifs();
+  window.toggleNotifications = toggleNotificationsForHome;
+  updateNotifBadgeForHome();
 
   // ── Cerrar panel de notificaciones al hacer clic fuera ───────────────────────
   document.addEventListener('click', function(e) {
-    const panel = document.getElementById('hw-notif-panel');
-    const bell  = document.getElementById('hw-notif-bell');
+    const panel = document.getElementById('notif-panel');
+    const bell  = document.getElementById('notif-btn');
     if (panel && panel.classList.contains('open') && !panel.contains(e.target) && !bell.contains(e.target)) {
       panel.classList.remove('open');
     }
