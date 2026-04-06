@@ -7265,11 +7265,12 @@ const RESUMEN_KPI_CATALOG = [
 ];
 const RESUMEN_KPIS_KEY = 'apg_resumen_kpis';
 const RESUMEN_KPIS_DEFAULT = ['ventas','nps','conv','trafico','dta'];
+const MAX_RESUMEN_KPIS = 5;
 
 function getResumenKPISelection() {
   try {
     const stored = JSON.parse(localStorage.getItem(RESUMEN_KPIS_KEY));
-    if (Array.isArray(stored) && stored.length) return stored.slice(0, 5);
+    if (Array.isArray(stored) && stored.length) return stored.slice(0, MAX_RESUMEN_KPIS);
   } catch(e) {}
   return RESUMEN_KPIS_DEFAULT;
 }
@@ -7307,7 +7308,7 @@ function toggleResumenKPISelector() {
   const selection = getResumenKPISelection();
   sel.innerHTML = `
     <div class="rks-header">
-      <span>Elige hasta 5 KPIs</span>
+      <span>Elige hasta ${MAX_RESUMEN_KPIS} KPIs</span>
       <button class="rks-close" onclick="toggleResumenKPISelector()">✕</button>
     </div>
     <div class="rks-list">
@@ -7326,7 +7327,7 @@ function onResumenKPICheck(checkbox) {
   if (!sel) return;
   const checkboxes = [...sel.querySelectorAll('input[type=checkbox]')];
   const checked = checkboxes.filter(cb => cb.checked);
-  if (checked.length > 5) { checkbox.checked = false; return; }
+  if (checked.length > MAX_RESUMEN_KPIS) { checkbox.checked = false; return; }
   const newSelection = checked.map(cb => cb.value);
   localStorage.setItem(RESUMEN_KPIS_KEY, JSON.stringify(newSelection));
   renderResumenKPIs();
