@@ -5295,6 +5295,36 @@ function viewArchive() {
   }).join('');
 }
 
+/* ═══════════════════════════════════════════════
+   MIS KPIs — Selectable 5-KPI mini-cards for Resumen
+   (declared here so they are available before the init
+    sequence calls renderResumenKPIs())
+═══════════════════════════════════════════════ */
+const RESUMEN_KPI_CATALOG = [
+  { key:'ventas',         label:'💰 Ventas Totales',  short:'Ventas',      valKey:'ventas',         objKey:'objVentas' },
+  { key:'nps',            label:'⭐ NPS Tienda',       short:'NPS Tienda',  valKey:'nps',            objKey:'objNps' },
+  { key:'dta',            label:'⏰ DTA Horas',        short:'DTA',         valKey:'dta',            objKey:'objDta' },
+  { key:'conv',           label:'🔄 Conversión',       short:'Conv.',       valKey:'conv',           objKey:'objConv' },
+  { key:'trafico',        label:'👣 Tráfico',           short:'Tráfico',     valKey:'trafico',        objKey:'objTrafico' },
+  { key:'ventasBusiness', label:'💼 Ventas Business',  short:'Business',    valKey:'ventasBusiness', objKey:'objVentasBusiness' },
+  { key:'ventasApu',      label:'📱 Ventas APU',       short:'APU',         valKey:'ventasApu',      objKey:'objVentasApu' },
+  { key:'ventasSfs',      label:'🚚 Ventas SFS',       short:'SFS',         valKey:'ventasSfs',      objKey:'objVentasSfs' },
+  { key:'npsShop',        label:'🛍️ NPS Shopping',     short:'NPS Shop',    valKey:'npsShop',        objKey:'objNpsShop' },
+  { key:'npsApu',         label:'🔧 NPS APU',           short:'NPS APU',     valKey:'npsApu',         objKey:'objNpsApu' },
+  { key:'npsSupport',     label:'🎧 NPS Support',      short:'NPS Sup',     valKey:'npsSupport',     objKey:'objNpsSupport' },
+  { key:'npsTaa',         label:'🎓 NPS T@A',           short:'NPS T@A',     valKey:'npsTaa',         objKey:'objNpsTaa' },
+  { key:'intros1k',       label:'📲 Intros/1K',         short:'Intros/1K',   valKey:'intros1k',       objKey:'objIntros1k' },
+  { key:'timely',         label:'⏱️ Timely %',          short:'Timely',      valKey:'timely',         objKey:'objTimely' },
+  { key:'cpUsage',        label:'🔗 C&P Usage %',       short:'C&P',         valKey:'cpUsage',        objKey:'objCpUsage' },
+  { key:'gbConv',         label:'📊 GB Conv. %',        short:'GB Conv',     valKey:'gbConv',         objKey:'objGbConv' },
+  { key:'introsSessions', label:'📲 Intros/1K Ses.',   short:'Intros Ses',  valKey:'introsSessions', objKey:'objIntrosSessions' },
+  { key:'iphoneTat',      label:'📱 iPhone TAT',        short:'iPhone TAT',  valKey:'iphoneTat',      objKey:'objIphoneTat' },
+  { key:'upt',            label:'🛍️ UPT',               short:'UPT',         valKey:'upt',            objKey:'objUpt' },
+];
+const RESUMEN_KPIS_KEY = 'apg_resumen_kpis';
+const RESUMEN_KPIS_DEFAULT = ['ventas','nps','conv','trafico','dta'];
+const MAX_RESUMEN_KPIS = 5;
+
 loadKPIs();
 renderTasks(); renderTeam(); renderEvents();
 // Populate manager dropdown in event creation form
@@ -7238,34 +7268,6 @@ function _initRadarCollapseState() {
     }
   } catch(e) {}
 }
-
-/* ═══════════════════════════════════════════════
-   MIS KPIs — Selectable 5-KPI mini-cards for Resumen
-═══════════════════════════════════════════════ */
-const RESUMEN_KPI_CATALOG = [
-  { key:'ventas',         label:'💰 Ventas Totales',  short:'Ventas',      valKey:'ventas',         objKey:'objVentas' },
-  { key:'nps',            label:'⭐ NPS Tienda',       short:'NPS Tienda',  valKey:'nps',            objKey:'objNps' },
-  { key:'dta',            label:'⏰ DTA Horas',        short:'DTA',         valKey:'dta',            objKey:'objDta' },
-  { key:'conv',           label:'🔄 Conversión',       short:'Conv.',       valKey:'conv',           objKey:'objConv' },
-  { key:'trafico',        label:'👣 Tráfico',           short:'Tráfico',     valKey:'trafico',        objKey:'objTrafico' },
-  { key:'ventasBusiness', label:'💼 Ventas Business',  short:'Business',    valKey:'ventasBusiness', objKey:'objVentasBusiness' },
-  { key:'ventasApu',      label:'📱 Ventas APU',       short:'APU',         valKey:'ventasApu',      objKey:'objVentasApu' },
-  { key:'ventasSfs',      label:'🚚 Ventas SFS',       short:'SFS',         valKey:'ventasSfs',      objKey:'objVentasSfs' },
-  { key:'npsShop',        label:'🛍️ NPS Shopping',     short:'NPS Shop',    valKey:'npsShop',        objKey:'objNpsShop' },
-  { key:'npsApu',         label:'🔧 NPS APU',           short:'NPS APU',     valKey:'npsApu',         objKey:'objNpsApu' },
-  { key:'npsSupport',     label:'🎧 NPS Support',      short:'NPS Sup',     valKey:'npsSupport',     objKey:'objNpsSupport' },
-  { key:'npsTaa',         label:'🎓 NPS T@A',           short:'NPS T@A',     valKey:'npsTaa',         objKey:'objNpsTaa' },
-  { key:'intros1k',       label:'📲 Intros/1K',         short:'Intros/1K',   valKey:'intros1k',       objKey:'objIntros1k' },
-  { key:'timely',         label:'⏱️ Timely %',          short:'Timely',      valKey:'timely',         objKey:'objTimely' },
-  { key:'cpUsage',        label:'🔗 C&P Usage %',       short:'C&P',         valKey:'cpUsage',        objKey:'objCpUsage' },
-  { key:'gbConv',         label:'📊 GB Conv. %',        short:'GB Conv',     valKey:'gbConv',         objKey:'objGbConv' },
-  { key:'introsSessions', label:'📲 Intros/1K Ses.',   short:'Intros Ses',  valKey:'introsSessions', objKey:'objIntrosSessions' },
-  { key:'iphoneTat',      label:'📱 iPhone TAT',        short:'iPhone TAT',  valKey:'iphoneTat',      objKey:'objIphoneTat' },
-  { key:'upt',            label:'🛍️ UPT',               short:'UPT',         valKey:'upt',            objKey:'objUpt' },
-];
-const RESUMEN_KPIS_KEY = 'apg_resumen_kpis';
-const RESUMEN_KPIS_DEFAULT = ['ventas','nps','conv','trafico','dta'];
-const MAX_RESUMEN_KPIS = 5;
 
 function getResumenKPISelection() {
   try {
