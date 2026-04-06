@@ -94,7 +94,7 @@ function save(k, v) {
    to persist the FileSystemFileHandle between sessions.
 ═══════════════════════════════════════════════ */
 const _BOX_HANDLE_KEY = '_fileHandle';
-let _boxFileHandle = null;    // FileSystemFileHandle | null
+let _boxFileHandle = null;    // FileSystemFileHandle | null (File System Access API browsers only)
 let _boxSyncTimer  = null;    // debounce timer id
 let _boxLastSync   = null;    // Date | null
 
@@ -119,7 +119,7 @@ function _buildFileSyncPayload() {
   };
 }
 
-/* Write payload to the connected file — returns Promise */
+/* Write payload to the connected file — returns Promise (File System Access API only) */
 async function _writeToFile() {
   if (!_boxFileHandle) return;
   const btn = document.getElementById('box-sync-btn');
@@ -129,6 +129,8 @@ async function _writeToFile() {
     await writable.write(JSON.stringify(_buildFileSyncPayload(), null, 2));
     await writable.close();
     _boxLastSync = new Date();
+    localStorage.setItem('apg_box_sync_name', _boxFileHandle.name);
+    localStorage.setItem('apg_box_sync_time', _boxLastSync.toISOString());
     if (btn) { btn.classList.remove('syncing', 'error'); btn.classList.add('synced'); }
   } catch(err) {
     console.warn('Box sync write error:', err);
@@ -157,81 +159,66 @@ async function _verifyHandlePermission(handle) {
 
 /* Load file data on startup — called from DOMContentLoaded */
 async function _initBoxSync() {
-  if (!window.showSaveFilePicker) return; // Unsupported browser
-  try {
-    const handle = await _idbGet(_BOX_HANDLE_KEY);
-    if (!handle) return;
-    const granted = await _verifyHandlePermission(handle);
-    if (!granted) return;
-    _boxFileHandle = handle;
-    const btn = document.getElementById('box-sync-btn');
+  const btn = document.getElementById('box-sync-btn');
+  // Restore last sync time from localStorage (all browsers)
+  const syncedTime = localStorage.getItem('apg_box_sync_time');
+  const syncedName = localStorage.getItem('apg_box_sync_name');
+  if (syncedTime) { try { _boxLastSync = new Date(syncedTime); } catch(_) {} }
 
-    // Read file and compare timestamps
-    const file = await handle.getFile();
-    const text = await file.text();
-    let parsed;
-    try { parsed = JSON.parse(text); } catch(_) { parsed = null; }
-
-    if (parsed && parsed._meta && parsed.data && typeof parsed.data === 'object') {
-      const fileSaved   = parsed._meta.lastSaved ? new Date(parsed._meta.lastSaved).getTime() : 0;
-      const lsBackup    = parseInt(localStorage.getItem('apg_last_backup') || '0', 10);
-      if (fileSaved > lsBackup) {
-        // File is newer — import into localStorage
-        Object.keys(parsed.data).filter(k => k.startsWith('apg_')).forEach(key => {
-          try { localStorage.setItem(key, JSON.stringify(parsed.data[key])); }
-          catch(err) { console.warn('Box import key error:', key, err); }
-        });
-        localStorage.setItem('apg_last_backup', fileSaved.toString());
+  if (window.showOpenFilePicker) {
+    // File System Access API browsers (Chrome/Edge): try to restore persistent handle
+    try {
+      const handle = await _idbGet(_BOX_HANDLE_KEY);
+      if (!handle) {
+        if (syncedName && btn) btn.classList.add('synced');
+        return;
+      }
+      const granted = await _verifyHandlePermission(handle);
+      if (!granted) {
+        if (syncedName && btn) btn.classList.add('synced');
+        return;
+      }
+      _boxFileHandle = handle;
+      // Read file and compare timestamps
+      const file = await handle.getFile();
+      const text = await file.text();
+      let parsed;
+      try { parsed = JSON.parse(text); } catch(_) { parsed = null; }
+      if (parsed && parsed._meta && parsed.data && typeof parsed.data === 'object') {
+        const fileSaved = parsed._meta.lastSaved ? new Date(parsed._meta.lastSaved).getTime() : 0;
+        const lsBackup  = parseInt(localStorage.getItem('apg_last_backup') || '0', 10);
+        if (fileSaved > lsBackup) {
+          // File is newer — import into localStorage
+          _boxApplyData(parsed.data);
+          localStorage.setItem('apg_last_backup', fileSaved.toString());
+        } else {
+          // localStorage is newer — push to file
+          await _writeToFile();
+        }
       } else {
-        // localStorage is newer — push to file
+        // File empty/invalid — write current data
         await _writeToFile();
       }
-    } else {
-      // File empty/invalid — write current data
-      await _writeToFile();
+      if (btn) { btn.classList.remove('error'); btn.classList.add('synced'); }
+    } catch(err) {
+      console.warn('Box sync init error:', err);
+      if (syncedName && btn) btn.classList.add('synced');
     }
-
-    if (btn) { btn.classList.add('synced'); }
-  } catch(err) {
-    console.warn('Box sync init error:', err);
+  } else {
+    // Fallback browsers (Safari/Firefox): restore visual state only
+    if (syncedName && btn) btn.classList.add('synced');
   }
 }
 
-/* Toggle button handler */
-async function toggleBoxSync() {
-  if (!window.showSaveFilePicker) {
-    showToast('Tu navegador no soporta sincronización con archivos locales. Usa Chrome o Edge.', 'error');
-    return;
-  }
-
+/* Toggle button handler — shows/hides the sync popup */
+function toggleBoxSync() {
   // Close any existing popup
   const existingPopup = document.getElementById('box-sync-popup');
   if (existingPopup) { existingPopup.remove(); return; }
-
-  if (_boxFileHandle) {
-    // Show status popup
-    _showBoxSyncPopup();
-  } else {
-    // Connect to file
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: 'dashboard-data.json',
-        types: [{ description: 'JSON Data', accept: { 'application/json': ['.json'] } }]
-      });
-      _boxFileHandle = handle;
-      await _idbSet(_BOX_HANDLE_KEY, handle);
-      await _writeToFile();
-      showToast('✅ Conectado a ' + handle.name);
-    } catch(err) {
-      if (err && err.name !== 'AbortError') {
-        console.warn('Box sync connect error:', err);
-        showToast('❌ No se pudo conectar al archivo', 'error');
-      }
-    }
-  }
+  _showBoxSyncPopup();
 }
 
-/* Small status popup shown when already connected */
+/* Full Box sync popup with all options */
 function _showBoxSyncPopup() {
   const btn = document.getElementById('box-sync-btn');
   if (!btn) return;
@@ -240,31 +227,51 @@ function _showBoxSyncPopup() {
   popup.id = 'box-sync-popup';
 
   const rect = btn.getBoundingClientRect();
-  popup.style.top  = (rect.bottom + 8) + 'px';
+  popup.style.top   = (rect.bottom + 8) + 'px';
   popup.style.right = (window.innerWidth - rect.right) + 'px';
 
-  const lastSyncText = _boxLastSync
-    ? _fmtRelativeTime(_boxLastSync)
-    : 'nunca';
-  const fileName = _boxFileHandle ? _boxFileHandle.name : 'dashboard-data.json';
+  const syncedName = _boxFileHandle ? _boxFileHandle.name : (localStorage.getItem('apg_box_sync_name') || null);
+  const rawTime    = localStorage.getItem('apg_box_sync_time');
+  let syncedTimeObj = _boxLastSync;
+  if (!syncedTimeObj && rawTime) { try { syncedTimeObj = new Date(rawTime); } catch(_) {} }
+  const lastSyncText  = syncedTimeObj ? _fmtRelativeTime(syncedTimeObj) : null;
+  const isLinked      = !!syncedName;
 
+  const titleText = isLinked ? `📁 Vinculado: ${syncedName}` : '📁 Sin archivo vinculado';
+  const subText   = lastSyncText
+    ? `Última sincronización: ${lastSyncText}`
+    : (isLinked ? 'Sin sincronizar aún' : 'Vincula un archivo .json de tu carpeta de Box');
+
+  const disabledAttr = isLinked ? '' : 'disabled';
   popup.innerHTML = `
-    <div class="bsp-title">📁 Conectado: ${fileName}</div>
-    <div class="bsp-sub">Última sincronización: ${lastSyncText}</div>
+    <div class="bsp-title">${titleText}</div>
+    <div class="bsp-sub">${subText}</div>
     <div class="bsp-btns">
-      <button class="bsp-btn" onclick="_boxSyncNow()">🔄 Sincronizar ahora</button>
-      <button class="bsp-btn danger" onclick="_boxDisconnect()">❌ Desconectar</button>
+      <button class="bsp-btn" onclick="_boxLinkFile()">📂 Vincular archivo</button>
+      <button class="bsp-btn" onclick="_boxImportFromFile()" ${disabledAttr}>⬇️ Importar desde Box</button>
+      <button class="bsp-btn" onclick="_boxExportToFile()" ${disabledAttr}>⬆️ Exportar a Box</button>
+      ${isLinked ? '<button class="bsp-btn danger" onclick="_boxDisconnect()">🔗 Desvincular</button>' : ''}
     </div>`;
   document.body.appendChild(popup);
 
-  // Close on outside click
+  // Close on outside click or Escape
   setTimeout(() => {
-    document.addEventListener('click', function closePopup(e) {
+    function closePopup(e) {
       if (!popup.contains(e.target) && e.target !== btn) {
         popup.remove();
         document.removeEventListener('click', closePopup);
+        document.removeEventListener('keydown', closeOnEsc);
       }
-    });
+    }
+    function closeOnEsc(e) {
+      if (e.key === 'Escape') {
+        popup.remove();
+        document.removeEventListener('click', closePopup);
+        document.removeEventListener('keydown', closeOnEsc);
+      }
+    }
+    document.addEventListener('click', closePopup);
+    document.addEventListener('keydown', closeOnEsc);
   }, 10);
 }
 
@@ -278,19 +285,214 @@ function _fmtRelativeTime(date) {
   return `hace ${Math.round(diffH / 24)} días`;
 }
 
+/* Link a file — File System Access API or <input type="file"> fallback */
+async function _boxLinkFile() {
+  document.getElementById('box-sync-popup')?.remove();
+  if (window.showOpenFilePicker) {
+    // Chrome/Edge: use File System Access API for persistent handle
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: 'JSON Data', accept: { 'application/json': ['.json'] } }],
+        multiple: false
+      });
+      _boxFileHandle = handle;
+      await _idbSet(_BOX_HANDLE_KEY, handle);
+      localStorage.setItem('apg_box_sync_name', handle.name);
+      await _boxImportOrInitFile(handle);
+      showToast('✅ Vinculado a ' + handle.name);
+    } catch(err) {
+      if (err && err.name !== 'AbortError') {
+        console.warn('Box link error:', err);
+        showToast('❌ No se pudo vincular el archivo', 'error');
+      }
+    }
+  } else {
+    // Safari/Firefox fallback: use <input type="file">
+    const input = document.createElement('input');
+    input.type   = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const btn = document.getElementById('box-sync-btn');
+      if (btn) { btn.classList.remove('error'); btn.classList.add('syncing'); }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          if (parsed && parsed.data && typeof parsed.data === 'object') {
+            _boxApplyData(parsed.data);
+          }
+          _boxLastSync = new Date();
+          localStorage.setItem('apg_box_sync_name', file.name);
+          localStorage.setItem('apg_box_sync_time', _boxLastSync.toISOString());
+          if (btn) { btn.classList.remove('syncing', 'error'); btn.classList.add('synced'); }
+          showToast('✅ Vinculado e importado: ' + file.name);
+        } catch(err) {
+          console.warn('Box link parse error:', err);
+          if (btn) { btn.classList.remove('syncing', 'synced'); btn.classList.add('error'); }
+          showToast('❌ Error al leer el archivo', 'error');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+}
+
+/* Import from the linked file into localStorage */
+async function _boxImportFromFile() {
+  document.getElementById('box-sync-popup')?.remove();
+  const btn = document.getElementById('box-sync-btn');
+  if (_boxFileHandle) {
+    // File System Access API
+    try {
+      if (btn) { btn.classList.remove('synced', 'error'); btn.classList.add('syncing'); }
+      const file = await _boxFileHandle.getFile();
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!parsed.data || typeof parsed.data !== 'object') {
+        showToast('❌ Archivo inválido', 'error');
+        if (btn) { btn.classList.remove('syncing'); btn.classList.add('error'); }
+        return;
+      }
+      _boxApplyData(parsed.data);
+      _boxLastSync = new Date();
+      localStorage.setItem('apg_box_sync_time', _boxLastSync.toISOString());
+      if (btn) { btn.classList.remove('syncing', 'error'); btn.classList.add('synced'); }
+      showToast('✅ Datos importados desde ' + _boxFileHandle.name);
+      location.reload();
+    } catch(err) {
+      console.warn('Box import error:', err);
+      if (btn) { btn.classList.remove('syncing', 'synced'); btn.classList.add('error'); }
+      showToast('❌ Error al importar desde Box', 'error');
+    }
+  } else {
+    // Fallback: use <input type="file">
+    const input = document.createElement('input');
+    input.type   = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (btn) { btn.classList.remove('synced', 'error'); btn.classList.add('syncing'); }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          if (!parsed.data || typeof parsed.data !== 'object') {
+            showToast('❌ Archivo inválido', 'error');
+            if (btn) { btn.classList.remove('syncing'); btn.classList.add('error'); }
+            return;
+          }
+          _boxApplyData(parsed.data);
+          _boxLastSync = new Date();
+          localStorage.setItem('apg_box_sync_name', file.name);
+          localStorage.setItem('apg_box_sync_time', _boxLastSync.toISOString());
+          if (btn) { btn.classList.remove('syncing', 'error'); btn.classList.add('synced'); }
+          showToast('✅ Datos importados desde ' + file.name);
+          location.reload();
+        } catch(err) {
+          console.warn('Box import error:', err);
+          if (btn) { btn.classList.remove('syncing', 'synced'); btn.classList.add('error'); }
+          showToast('❌ Error al importar el archivo', 'error');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+}
+
+/* Export all apg_ data to the linked file */
+async function _boxExportToFile() {
+  document.getElementById('box-sync-popup')?.remove();
+  const btn = document.getElementById('box-sync-btn');
+  if (_boxFileHandle) {
+    // File System Access API — write directly
+    await _writeToFile();
+    showToast('✅ Exportado a ' + _boxFileHandle.name);
+  } else {
+    // Fallback — trigger download; user saves it to their Box folder manually
+    try {
+      if (btn) { btn.classList.remove('synced', 'error'); btn.classList.add('syncing'); }
+      const json     = JSON.stringify(_buildFileSyncPayload(), null, 2);
+      const blob     = new Blob([json], { type: 'application/json' });
+      const url      = URL.createObjectURL(blob);
+      const a        = document.createElement('a');
+      const fileName = localStorage.getItem('apg_box_sync_name') || 'dashboard-data.json';
+      a.href     = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+      _boxLastSync = new Date();
+      localStorage.setItem('apg_box_sync_time', _boxLastSync.toISOString());
+      if (btn) { btn.classList.remove('syncing', 'error'); btn.classList.add('synced'); }
+      showToast('⬇️ Guardando "' + fileName + '" — muévelo a tu carpeta de Box');
+    } catch(err) {
+      console.warn('Box export error:', err);
+      if (btn) { btn.classList.remove('syncing', 'synced'); btn.classList.add('error'); }
+      showToast('❌ Error al exportar a Box', 'error');
+    }
+  }
+}
+
+/* Apply parsed Box file data object to localStorage */
+function _boxApplyData(data) {
+  Object.keys(data).filter(k => k.startsWith('apg_')).forEach(key => {
+    try { localStorage.setItem(key, JSON.stringify(data[key])); }
+    catch(err) { console.warn('Box import key error:', key, err); }
+  });
+}
+
+/* Helper: after linking via File System Access API, auto-import or init the file */
+async function _boxImportOrInitFile(handle) {
+  try {
+    const file = await handle.getFile();
+    const text = await file.text();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch(_) { parsed = null; }
+    if (parsed && parsed._meta && parsed.data && typeof parsed.data === 'object') {
+      const fileSaved = parsed._meta.lastSaved ? new Date(parsed._meta.lastSaved).getTime() : 0;
+      const lsBackup  = parseInt(localStorage.getItem('apg_last_backup') || '0', 10);
+      if (fileSaved > lsBackup) {
+        _boxApplyData(parsed.data);
+        localStorage.setItem('apg_last_backup', fileSaved.toString());
+      } else {
+        await _writeToFile();
+      }
+    } else {
+      await _writeToFile();
+    }
+    _boxLastSync = new Date();
+    localStorage.setItem('apg_box_sync_time', _boxLastSync.toISOString());
+    const btn = document.getElementById('box-sync-btn');
+    if (btn) { btn.classList.remove('syncing', 'error'); btn.classList.add('synced'); }
+  } catch(err) {
+    console.warn('Box import/init error:', err);
+  }
+}
+
 async function _boxSyncNow() {
   document.getElementById('box-sync-popup')?.remove();
-  await _writeToFile();
-  showToast('✅ Sincronizado con ' + (_boxFileHandle?.name || 'archivo'));
+  if (_boxFileHandle) {
+    await _writeToFile();
+    showToast('✅ Sincronizado con ' + (_boxFileHandle?.name || 'archivo'));
+  } else {
+    _boxImportFromFile();
+  }
 }
 
 function _boxDisconnect() {
   document.getElementById('box-sync-popup')?.remove();
   _boxFileHandle = null;
   _idbDelete(_BOX_HANDLE_KEY).catch(() => {});
+  localStorage.removeItem('apg_box_sync_name');
+  localStorage.removeItem('apg_box_sync_time');
+  _boxLastSync = null;
   const btn = document.getElementById('box-sync-btn');
   if (btn) btn.classList.remove('synced', 'syncing', 'error');
-  showToast('📁 Desconectado del archivo local');
+  showToast('📁 Desvinculado del archivo local');
 }
 
 /* Init on DOMContentLoaded */
