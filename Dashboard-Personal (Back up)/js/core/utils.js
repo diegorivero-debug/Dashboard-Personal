@@ -118,7 +118,12 @@ export async function getStorageStats() {
 
 // ── Value helpers ─────────────────────────────────────────────────────────────
 
-/** Parse a potentially-formatted number string (handles commas as decimal separator). */
+/**
+ * Parse a potentially-formatted number string.
+ * Handles European comma decimal separator (e.g. "1.234,56" → 1234.56 is NOT supported,
+ * but "1234,56" → 1234.56 is). Strips non-numeric characters except digits, dots and commas.
+ * Returns 0 for empty, null, undefined or non-numeric inputs.
+ */
 export function parseNum(v) {
   return parseFloat(String(v||'').replace(/[^0-9.,]/g,'').replace(',','.')) || 0;
 }

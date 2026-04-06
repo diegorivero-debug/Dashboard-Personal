@@ -651,10 +651,11 @@
           // If briefing not done today, start counting from yesterday
           if (!doneToday) checkDate.setDate(checkDate.getDate() - 1);
           for (const d of sortedDates) {
-            if (d === localDateStr(checkDate)) {
+            const checkStr = localDateStr(checkDate);
+            if (d === checkStr) {
               streak++;
               checkDate.setDate(checkDate.getDate() - 1);
-            } else if (d < localDateStr(checkDate)) {
+            } else if (d < checkStr) {
               break; // gap found — streak ends
             }
           }
