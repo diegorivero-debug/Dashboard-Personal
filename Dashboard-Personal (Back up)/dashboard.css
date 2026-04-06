@@ -124,6 +124,31 @@
       font-family: inherit;
     }
     .header-icon-btn:hover { background: var(--surface2); color: var(--text-primary); border-color: var(--border); }
+    #box-sync-btn.synced  { color: var(--success); }
+    #box-sync-btn.syncing { color: var(--warning, #ff9f0a); animation: box-sync-pulse 1s infinite; }
+    #box-sync-btn.error   { color: var(--danger); }
+    @keyframes box-sync-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    #box-sync-popup {
+      position: fixed;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius, 10px);
+      box-shadow: var(--shadow, 0 4px 20px rgba(0,0,0,.15));
+      padding: 14px 16px;
+      z-index: 10000;
+      min-width: 240px;
+      font-size: 13px;
+    }
+    #box-sync-popup .bsp-title { font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+    #box-sync-popup .bsp-sub   { color: var(--text-secondary); font-size: 12px; margin-bottom: 12px; }
+    #box-sync-popup .bsp-btns  { display: flex; gap: 8px; }
+    #box-sync-popup .bsp-btn   {
+      flex: 1; padding: 6px 10px; border-radius: 7px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text-primary); cursor: pointer;
+      font-size: 12px; font-family: inherit; transition: background .15s;
+    }
+    #box-sync-popup .bsp-btn:hover { background: var(--surface3, var(--surface2)); }
+    #box-sync-popup .bsp-btn.danger { border-color: var(--danger); color: var(--danger); }
 
     /* ── NAV TABS WRAPPER (scroll indicators) ── */
     .nav-tabs-wrapper {
