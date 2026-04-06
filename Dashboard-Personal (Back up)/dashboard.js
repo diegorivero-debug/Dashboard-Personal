@@ -216,18 +216,21 @@ const TABS = ['resumen','routine','kpis','equipo','tareas','agenda','reuniones',
 const TAB_GROUPS = {
   negocio:   [
     { id:'resumen',              label:'📊 Resumen' },
+    { id:'weekly-report',        label:'📋 Weekly Report' },
     { id:'kpis',                 label:'📈 KPIs de Tienda' },
     { id:'routine',              label:'📅 Semana' },
+    { id:'okrs',                 label:'🎯 OKR & Goals' },
     { id:'qbr',                  label:'📊 QBR' },
     { id:'commitments',          label:'🎯 Commitments Q' },
     { id:'commitments-timeline', label:'🗓️ Timeline' }
   ],
   equipo:    [
-    { id:'equipo',    label:'👥 Mi Equipo' },
-    { id:'profiles',  label:'👤 Perfiles' },
-    { id:'feedback',  label:'💬 Feedback SBI' },
-    { id:'convs',     label:'📋 Conversaciones' },
-    { id:'ls-index',  label:'📊 Leadership Index' }
+    { id:'equipo',          label:'👥 Mi Equipo' },
+    { id:'person-timeline', label:'📅 Timeline' },
+    { id:'profiles',        label:'👤 Perfiles' },
+    { id:'feedback',        label:'💬 Feedback SBI' },
+    { id:'convs',           label:'📋 Conversaciones' },
+    { id:'ls-index',        label:'📊 Leadership Index' }
   ],
   cliente:   [
     { id:'vozcli',    label:'🗣️ Voz Cliente' }
@@ -256,6 +259,7 @@ function renderGroupTabs(group) {
   bar.innerHTML = tabs.map(t =>
     `<div class="nav-tab" data-tab="${t.id}" onclick="switchTab('${t.id}')">${t.label}</div>`
   ).join('');
+  requestAnimationFrame(() => window.updateNavTabsScrollIndicators?.());
 }
 
 function switchGroup(group, tabOverride) {
@@ -308,6 +312,9 @@ function switchTab(name) {
   if(name==='ls-peticiones')  renderLSPeticiones();
   if(name==='ls-index')       { renderLeadershipIndex(); renderLSQOverview(); }
   if(name==='notas')          { renderMeetingNotes(); renderStorageIndicator(); }
+  if(name==='weekly-report')  window.renderWeeklyReport?.();
+  if(name==='okrs')           window.renderOKRs?.();
+  if(name==='person-timeline') window.renderPersonTimeline?.();
 }
 
 /* Read ?seccion= URL param and activate the right group on load */

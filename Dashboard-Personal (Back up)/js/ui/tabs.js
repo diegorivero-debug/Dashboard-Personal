@@ -17,6 +17,7 @@ export const TAB_GROUPS = {
   equipo:    [
     { id:'equipo',           label:'👥 Mi Equipo' },
     { id:'person-timeline',  label:'📅 Timeline' },
+    { id:'profiles',         label:'👤 Perfiles' },
     { id:'feedback',         label:'💬 Feedback SBI' },
     { id:'convs',            label:'📋 Conversaciones' },
     { id:'ls-index',         label:'📊 Leadership Index' }
@@ -81,26 +82,27 @@ export function switchTab(name) {
   if (tabEl) tabEl.classList.add('active');
   const tabBtn = document.querySelector(`#nav-tabs-bar .nav-tab[data-tab="${name}"]`);
   if (tabBtn) tabBtn.classList.add('active');
-  if(name==='resumen')       { window.updateSummary?.(); window.checkAutoSuggestions?.(); window.renderTaskTrendChart?.(); window.renderFocusMetricDisplay?.(); window.renderKPIStreakAlerts?.(); window.renderMissionControl?.(); window.renderRadarChart?.(); }
+  if(name==='resumen')       { window.updateSummary?.(); window.checkAutoSuggestions?.(); window.renderTaskTrendChart?.(); window.renderFocusMetricDisplay?.(); window.renderKPIStreakAlerts?.(); window.renderMissionControl?.(); window.renderRadarChart?.(); window.populateFocusMetricCommitmentsOptions?.(); }
   if(name==='routine')       window.renderRoutine?.();
-  if(name==='kpis')          { window.renderKPIStreakAlerts?.(); window.renderCommitmentsKPIsMirror?.(); }
+  if(name==='kpis')          { window.renderKPIStreakAlerts?.(); window.renderCommitmentsKPIsMirror?.(); window.renderKPIHealthSummary?.(); window.renderKPISmartInsights?.(); }
   if(name==='reuniones')     { window.renderReuniones?.(); window.updateReunionOriginSelect?.(); }
   if(name==='actas')         window.renderActas?.();
   if(name==='equipo')        { window.renderTeam?.(); window.renderRecogs?.(); window.updateRecogDropdown?.(); if(window._recogView==='scoreboard') window.renderScoreboard?.(); }
-  if(name==='agenda')        { window.renderEvents?.(); window.applyAgendaView?.(); }
+  if(name==='profiles')      window.renderProfilesGrid?.();
+  if(name==='agenda')        { window.renderEvents?.(); window.applyAgendaView?.(); window.renderAgendaSidebar?.(); }
   if(name==='tareas')        { window.updateReunionOriginSelect?.(); window.setTaskView?.(typeof window._taskView!=='undefined'?window._taskView:load('apg_eisenhower_view','lista')); }
   if(name==='feedback')      { window.updateSBIPersonSelect?.(); window.renderSBIHistory?.(); }
   if(name==='vozcli')        { window.renderVerbatims?.(); window.renderVCStats?.(); window.renderVCInsights?.(); window.renderVCTrend?.(); window.renderVCAreaChart?.(); window.renderVCPareto?.(); window.renderVCCorrelation?.(); window.renderVCKeywords?.(); window.renderWowMoments?.(); window.renderImportHistory?.(); window.renderFeedbackSummary?.(); const dateEl = document.getElementById('vc-date'); if(dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0,10); }
   if(name==='convs')         { window.renderConvsGrid?.(); }
-  if(name==='commitments')   { window.loadCommitmentsQuarter?.(window.getCurrentCommitmentsQuarter?.()); }
-  if(name==='qbr')           { window.renderQBR?.(); }
-  if(name==='commitments-timeline') window.renderCommitmentsTimeline?.();
+  if(name==='commitments')   { window.loadCommitmentsQuarter?.(window.getCurrentCommitmentsQuarter?.()); window.renderCommitmentsProgress?.(); }
+  if(name==='qbr')           { window.renderQBR?.(); window.renderQBRHealthDashboard?.(); }
+  if(name==='commitments-timeline') { window.renderCommitmentsTimeline?.(); window.highlightTimelineCurrentWeek?.(); }
   if(name==='weekly-report')  window.renderWeeklyReport?.();
   if(name==='okrs')           window.renderOKRs?.();
   if(name==='ls-vacaciones')  window.renderLSVacaciones?.();
   if(name==='ls-festivos')    window.renderLSFestivos?.();
   if(name==='ls-peticiones')  window.renderLSPeticiones?.();
-  if(name==='ls-index')       window.renderLeadershipIndex?.();
+  if(name==='ls-index')       { window.renderLeadershipIndex?.(); window.renderLSQOverview?.(); }
   if(name==='person-timeline') window.renderPersonTimeline?.();
   if(name==='notas')          { window.renderMeetingNotes?.(); window.renderStorageIndicator?.(); }
 }
@@ -186,3 +188,9 @@ if (document.readyState === 'loading') {
 
 /* Expose to global scope so inline onclick="scrollNavTabs(...)" works */
 window.scrollNavTabs = scrollNavTabs;
+
+/* Expose navigation functions so onclick="switchGroup(...)" / onclick="switchTab(...)" work
+   from dashboard.html (loaded as a regular script, modules execute after) */
+window.switchGroup = switchGroup;
+window.switchTab = switchTab;
+window.updateNavTabsScrollIndicators = updateNavTabsScrollIndicators;
