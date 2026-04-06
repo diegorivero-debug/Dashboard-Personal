@@ -207,7 +207,7 @@
         <div class="page-subtitle">Informe semanal auto-generado con datos en tiempo real</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary" style="font-size:13px" onclick="copyReportToClipboard()">📋 Copiar al clipboard</button>
+        <button class="btn btn-primary" style="font-size:13px" onclick="emailWeeklyReport()">📧 Enviar recap semanal</button>
         <button class="btn btn-ghost" style="font-size:13px" onclick="printReport()">🖨️ Imprimir / PDF</button>
       </div>
     </div>
@@ -230,6 +230,7 @@
         <div class="page-subtitle" style="margin-bottom:0">Edita los valores directamente. Se guardan automáticamente.</div>
       </div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:30px;flex-wrap:wrap">
+        <button class="btn btn-ghost" style="font-size:13px" onclick="confirmCloseWeek()">🔒 Cerrar semana</button>
         <span class="saved-flash" id="kpi-saved">✓ Guardado</span>
       </div>
     </div>

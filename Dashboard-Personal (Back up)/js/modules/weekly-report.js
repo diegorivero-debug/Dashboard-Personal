@@ -355,247 +355,457 @@ export function generateHighlights(data) {
 }
 
 // ─── renderWeeklyReport ───────────────────────
+// Business recap for Market Leader — 5-zone layout
 
 export function renderWeeklyReport() {
   const container = document.getElementById('weekly-report-content');
   if (!container) return;
 
-  const data = generateReportData();
+  const kpisRaw = load(K.kpis, {});
+  const kpiHistory = load(K.kpiHistory, []);
+  const now = new Date();
+  const mon = getMondayOfWeek(now);
+  const sun = getSundayOfWeek(now);
+  const MESES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const monLabel = `${mon.getDate()} ${MESES_SHORT[mon.getMonth()]}`;
+  const sunLabel = `${sun.getDate()} ${MESES_SHORT[sun.getMonth()]} ${sun.getFullYear()}`;
+  const weekLabel = `${monLabel} – ${sunLabel}`;
 
-  // ── Header ──────────────────────────────
-  const headerHtml = `
-    <div class="wr-section wr-header">
-      <div class="wr-header-title">📋 Weekly Report</div>
-      <div class="wr-header-sub">${esc(data.meta.weekLabel)}</div>
-      <div class="wr-header-sub" style="margin-top:4px">${esc(data.meta.quarter)} · ${esc(data.meta.weekInQuarter)} · Generado: ${esc(data.meta.generatedAt)}</div>
-    </div>`;
+  // Helper: parse numeric value from a KPI field
+  function pn(v) {
+    if (v === undefined || v === null || v === '') return null;
+    const s = String(v).replace(/[^0-9.,\-]/g, '').replace(',', '.');
+    const n = parseFloat(s);
+    return isNaN(n) ? null : n;
+  }
 
-  // ── KPI table ───────────────────────────
-  let kpiRows = '';
-  if (data.kpis.length) {
-    for (const kpi of data.kpis) {
-      const pctStr = kpi.pct !== null ? `${kpi.pct}%` : '—';
-      const pctClass = kpiPctClass(kpi.pct);
-      const wowStr = kpi.wow !== null ? (kpi.wow >= 0 ? `+${kpi.wow.toFixed(1)}%` : `${kpi.wow.toFixed(1)}%`) : '—';
-      const trendClass = kpi.trendArrow === '↑' ? 'wr-trend-up' : kpi.trendArrow === '↓' ? 'wr-trend-down' : 'wr-trend-flat';
-      const objStr = kpi.objetivo !== null ? num(kpi.objetivo) : '—';
-      kpiRows += `<tr>
-        <td>${esc(kpi.label)}</td>
-        <td>${num(kpi.actual)}</td>
-        <td>${esc(objStr)}</td>
-        <td class="${pctClass}">${esc(pctStr)}</td>
-        <td class="${trendClass}">${esc(kpi.trendArrow)} ${esc(wowStr)}</td>
-      </tr>`;
+  // Helper: format number for display (strip trailing zeros)
+  function fmt(v, suffix='') {
+    if (v === null || v === undefined || v === '') return '—';
+    return String(v) + suffix;
+  }
+
+  // Helper: compute % vs objective
+  function pct(val, obj) {
+    const v = pn(val), o = pn(obj);
+    if (v === null || o === null || o === 0) return null;
+    return Math.round((v / o) * 100);
+  }
+
+  // Helper: build WoW badge HTML
+  function wowBadge(val, wow) {
+    const v = pn(val), w = pn(wow);
+    if (v === null || w === null || w === 0) return '<span style="color:var(--text-secondary)">—</span>';
+    const diff = v - w;
+    const pctDiff = Math.round((diff / Math.abs(w)) * 100);
+    if (diff > 0) return `<span style="color:var(--success,#34c759)">▲ +${pctDiff}%</span>`;
+    if (diff < 0) return `<span style="color:var(--danger,#ff3b30)">▼ ${pctDiff}%</span>`;
+    return '<span style="color:var(--text-secondary)">— 0%</span>';
+  }
+
+  // Helper: build YoY badge HTML
+  function yoyBadge(val, yoy) {
+    const v = pn(val), y = pn(yoy);
+    if (v === null || y === null || y === 0) return '<span style="color:var(--text-secondary)">—</span>';
+    const diff = v - y;
+    const pctDiff = Math.round((diff / Math.abs(y)) * 100);
+    if (diff > 0) return `<span style="color:var(--success,#34c759)">▲ +${pctDiff}%</span>`;
+    if (diff < 0) return `<span style="color:var(--danger,#ff3b30)">▼ ${pctDiff}%</span>`;
+    return '<span style="color:var(--text-secondary)">— 0%</span>';
+  }
+
+  // Helper: % badge
+  function pctBadge(p) {
+    if (p === null) return '<span style="color:var(--text-secondary)">—</span>';
+    const color = p >= 100 ? 'var(--success,#34c759)' : p >= 85 ? 'var(--warning,#ff9f0a)' : 'var(--danger,#ff3b30)';
+    return `<span style="color:${color};font-weight:700">${p}%</span>`;
+  }
+
+  // Helper: KPI table row
+  function row(label, valField, objField, wowField, yoyField) {
+    const v = kpisRaw[valField] || '';
+    const o = kpisRaw[objField] || '';
+    const w = kpisRaw[wowField] || '';
+    const y = kpisRaw[yoyField] || '';
+    const p = pct(v, o);
+    const hasWow = wowField && w;
+    const hasYoy = yoyField && y;
+    return `<tr>
+      <td style="padding:7px 10px;font-size:13px">${label}</td>
+      <td style="padding:7px 10px;font-size:13px;font-weight:600;text-align:right">${fmt(v)}</td>
+      <td style="padding:7px 10px;font-size:12px;color:var(--text-secondary);text-align:right">${fmt(o)}</td>
+      <td style="padding:7px 10px;text-align:right">${pctBadge(p)}</td>
+      <td style="padding:7px 10px;text-align:right">${hasWow ? wowBadge(v, w) : '<span style="color:var(--text-secondary)">—</span>'}</td>
+      <td style="padding:7px 10px;text-align:right">${hasYoy ? yoyBadge(v, y) : '<span style="color:var(--text-secondary)">—</span>'}</td>
+    </tr>`;
+  }
+
+  // KPI table
+  function table(cols, rows) {
+    return `<table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border)">
+          ${cols.map(c=>`<th style="padding:6px 10px;font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;text-align:${c.align||'left'}">${c.label}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.join('')}
+      </tbody>
+    </table>`;
+  }
+
+  const COLS = [
+    {label:'Métrica',   align:'left'},
+    {label:'Actual',    align:'right'},
+    {label:'Objetivo',  align:'right'},
+    {label:'%',         align:'right'},
+    {label:'WoW',       align:'right'},
+    {label:'YoY',       align:'right'},
+  ];
+
+  const SEP = `<div style="border-top:2px solid var(--border);margin:20px 0"></div>`;
+
+  // Context / notes
+  const notes = kpisRaw.notes || '';
+  const notesHtml = notes
+    ? `<div style="background:var(--surface2);border-radius:var(--radius);padding:14px;font-size:14px;line-height:1.6;white-space:pre-wrap">${notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+    : `<div style="font-size:13px;color:var(--text-secondary);font-style:italic">Sin contexto añadido esta semana. Añade notas en la pestaña KPIs.</div>`;
+
+  // Executive summary
+  const allKpiFields = [
+    { val:'ventas', obj:'objVentas' },
+    { val:'ventasBusiness', obj:'objVentasBusiness' },
+    { val:'ventasApu', obj:'objVentasApu' },
+    { val:'ventasSfs', obj:'objVentasSfs' },
+    { val:'conv', obj:'objConv' },
+    { val:'trafico', obj:'objTrafico' },
+    { val:'dta', obj:'objDta' },
+    { val:'iphoneTat', obj:'objIphoneTat' },
+    { val:'npsSupport', obj:'objNpsSupport' },
+    { val:'npsApu', obj:'objNpsApu' },
+    { val:'timely', obj:'objTimely' },
+    { val:'cpUsage', obj:'objCpUsage' },
+    { val:'gbConv', obj:'objGbConv' },
+    { val:'introsSessions', obj:'objIntrosSessions' },
+    { val:'nps', obj:'objNps' },
+    { val:'npsShop', obj:'objNpsShop' },
+    { val:'npsTaa', obj:'objNpsTaa' },
+  ];
+
+  const kpiLabels = {
+    ventas:'Ventas Totales', ventasBusiness:'Ventas Business', ventasApu:'Ventas APU', ventasSfs:'Ventas SFS',
+    conv:'Conversión', trafico:'Tráfico', dta:'DTA Horas', iphoneTat:'iPhone TAT',
+    npsSupport:'NPS Support', npsApu:'NPS APU', timely:'Timely', cpUsage:'C&P Usage',
+    gbConv:'GB Conv.', introsSessions:'Intros/Sessions', nps:'NPS Tienda', npsShop:'NPS Shopping', npsTaa:'NPS T@A',
+  };
+
+  let aboveObj = 0, belowObj = 0;
+  let bestKpi = null, bestPct = -Infinity;
+  let worstKpi = null, worstPct = Infinity;
+  let wowUp = 0, wowDown = 0;
+
+  for (const f of allKpiFields) {
+    const v = kpisRaw[f.val], o = kpisRaw[f.obj];
+    const w = kpisRaw['wow' + f.val.charAt(0).toUpperCase() + f.val.slice(1)];
+    const p = pct(v, o);
+    if (p !== null) {
+      if (p >= 100) aboveObj++; else belowObj++;
+      if (p > bestPct) { bestPct = p; bestKpi = kpiLabels[f.val]; }
+      if (p < worstPct) { worstPct = p; worstKpi = kpiLabels[f.val]; }
     }
-  } else {
-    kpiRows = `<tr><td colspan="5" class="wr-empty">Sin datos de KPIs disponibles</td></tr>`;
+    const vn = pn(v), wn = pn(w);
+    if (vn !== null && wn !== null && wn !== 0) {
+      if (vn > wn) wowUp++; else if (vn < wn) wowDown++;
+    }
   }
-  const kpiHtml = `
-    <div class="wr-section">
-      <div class="wr-section-title">📊 KPIs de la semana</div>
-      <table class="wr-kpi-table">
-        <thead><tr>
-          <th scope="col">Métrica</th><th scope="col">Actual</th><th scope="col">Objetivo</th><th scope="col">%</th><th scope="col">WoW</th>
-        </tr></thead>
-        <tbody>${kpiRows}</tbody>
-      </table>
+
+  const totalTracked = aboveObj + belowObj;
+  const execSummary = `
+    <ul style="margin:0;padding-left:18px;line-height:1.9;font-size:13px">
+      <li><strong>${aboveObj} de ${totalTracked}</strong> KPIs por encima del objetivo</li>
+      ${bestKpi ? `<li>KPI más fuerte: <strong>${bestKpi}</strong> (${bestPct}% del objetivo)</li>` : ''}
+      ${worstKpi && worstKpi !== bestKpi ? `<li>KPI que necesita atención: <strong>${worstKpi}</strong> (${worstPct}% del objetivo)</li>` : ''}
+      <li>Tendencia WoW: <strong style="color:var(--success,#34c759)">${wowUp} mejorando</strong>, <strong style="color:var(--danger,#ff3b30)">${wowDown} empeorando</strong></li>
+    </ul>`;
+
+  const sectionTitle = (icon, title) =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span style="font-size:18px">${icon}</span>
+      <span style="font-size:16px;font-weight:700">${title}</span>
     </div>`;
 
-  // ── Stats grid ──────────────────────────
-  const t = data.tasks;
-  const tm = data.team;
-  const mt = data.meetings;
-  const statsHtml = `
-    <div class="wr-section">
-      <div class="wr-section-title">📋 Resumen de actividad</div>
-      <div class="wr-stat-grid">
-        <div class="wr-stat">
-          <div class="wr-stat-number">${t.completedThisWeek}</div>
-          <div class="wr-stat-label">Tareas completadas</div>
-        </div>
-        <div class="wr-stat">
-          <div class="wr-stat-number">${t.pending}</div>
-          <div class="wr-stat-label">Tareas pendientes</div>
-        </div>
-        <div class="wr-stat" style="${t.overdue > 0 ? 'border-color:var(--danger,#ff3b30)' : ''}">
-          <div class="wr-stat-number" style="${t.overdue > 0 ? 'color:var(--danger,#ff3b30)' : ''}">${t.overdue}</div>
-          <div class="wr-stat-label">Tareas vencidas</div>
-        </div>
-        <div class="wr-stat">
-          <div class="wr-stat-number">${tm.oneOnOnesDone}</div>
-          <div class="wr-stat-label">1:1s esta semana</div>
-        </div>
-        <div class="wr-stat">
-          <div class="wr-stat-number">${tm.feedbackGiven}</div>
-          <div class="wr-stat-label">Feedbacks dados</div>
-        </div>
-        <div class="wr-stat">
-          <div class="wr-stat-number">${tm.recognitionsThisWeek}</div>
-          <div class="wr-stat-label">Reconocimientos</div>
-        </div>
-        <div class="wr-stat">
-          <div class="wr-stat-number">${mt.totalThisWeek}</div>
-          <div class="wr-stat-label">Reuniones</div>
-        </div>
-        <div class="wr-stat">
-          <div class="wr-stat-number">${mt.withNotes}</div>
-          <div class="wr-stat-label">Con notas</div>
-        </div>
-      </div>
-    </div>`;
+  container.innerHTML = `<div class="wr-report" style="max-width:900px">
 
-  // ── Focus Metric ─────────────────────────
-  let focusHtml = '';
-  if (data.focusMetric) {
-    focusHtml = `
-      <div class="wr-section">
-        <div class="wr-section-title">🔍 Métrica foco</div>
-        <div style="font-size:16px;font-weight:700;margin-bottom:6px">${esc(data.focusMetric.metric)}</div>
-        ${data.focusMetric.hypothesis ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px"><strong>Hipótesis:</strong> ${esc(data.focusMetric.hypothesis)}</div>` : ''}
-        ${data.focusMetric.reflection ? `<div style="font-size:13px;color:var(--text-secondary)"><strong>Reflexión:</strong> ${esc(data.focusMetric.reflection)}</div>` : ''}
-      </div>`;
-  }
+    <!-- Header -->
+    <div style="border-bottom:3px solid var(--accent);padding-bottom:16px;margin-bottom:20px">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px">📋 WEEKLY RECAP — APPLE PASSEIG DE GRÀCIA</div>
+      <div style="font-size:14px;color:var(--text-secondary);margin-top:4px">Semana del ${weekLabel} · Diego Rivero, Store Leader</div>
+    </div>
 
-  // ── OKRs ─────────────────────────────────
-  let okrHtml = '';
-  if (data.okrs.objectives.length) {
-    const scoreColor = okrScoreColor(data.okrs.globalScore);
-    const objRows = data.okrs.objectives.map(obj => {
-      const pct = Math.round(obj.score * 100);
-      const barColor = okrScoreColor(obj.score);
-      return `<div class="wr-okr-row">
-        <div style="flex:1;min-width:0;font-size:13px">${esc(obj.title)}</div>
-        <div class="wr-okr-bar"><div class="wr-okr-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
-        <div style="font-size:13px;font-weight:600;color:${barColor};width:36px;text-align:right">${obj.score.toFixed(2)}</div>
-      </div>`;
-    }).join('');
-    okrHtml = `
-      <div class="wr-section">
-        <div class="wr-section-title">🎯 OKRs — ${esc(data.okrs.activeQuarter || '')}</div>
-        <div style="margin-bottom:12px;font-size:13px">Score global: <strong style="color:${scoreColor}">${data.okrs.globalScore !== null ? data.okrs.globalScore.toFixed(2) : '—'}</strong></div>
-        ${objRows}
-      </div>`;
-  }
+    <!-- Contexto -->
+    <div style="margin-bottom:24px">
+      ${sectionTitle('📝','Contexto de la semana')}
+      ${notesHtml}
+    </div>
 
-  // ── Highlights ───────────────────────────
-  let highlightsHtml = '';
-  if (data.highlights.length) {
-    const items = data.highlights.map(h =>
-      `<div class="wr-highlight ${esc(h.type)}">${esc(h.text)}</div>`
-    ).join('');
-    highlightsHtml = `
-      <div class="wr-section">
-        <div class="wr-section-title">💡 Highlights de la semana</div>
-        ${items}
-      </div>`;
-  }
+    ${SEP}
 
-  // ── Top pending tasks ────────────────────
-  let pendingTasksHtml = '';
-  if (t.topPending.length) {
-    const items = t.topPending.map(task => {
-      const isOverdue = task.dueDate && task.dueDate < new Date().toISOString().slice(0, 10);
-      return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;${isOverdue ? 'color:var(--danger,#ff3b30)' : ''}">
-        ${isOverdue ? '⚠️ ' : '• '}${esc(task.title || task.texto || 'Sin título')}
-        ${task.dueDate ? `<span style="font-size:11px;color:var(--text-secondary);margin-left:8px">${esc(task.dueDate)}</span>` : ''}
-      </div>`;
-    }).join('');
-    pendingTasksHtml = `
-      <div class="wr-section">
-        <div class="wr-section-title">✅ Top tareas pendientes</div>
-        ${items}
-      </div>`;
-  }
+    <!-- Ventas Globales -->
+    <div style="margin-bottom:24px">
+      ${sectionTitle('💰','Ventas Globales')}
+      ${table(COLS, [
+        row('Ventas Totales',   'ventas',        'objVentas',        'wowVentas',        'yoyVentas'),
+        row('Ventas Business',  'ventasBusiness','objVentasBusiness','wowVentasBusiness','yoyVentasBusiness'),
+        row('Ventas APU',       'ventasApu',     'objVentasApu',     'wowVentasApu',     'yoyVentasApu'),
+        row('Ventas SFS',       'ventasSfs',     'objVentasSfs',     'wowVentasSfs',     'yoyVentasSfs'),
+      ])}
+    </div>
 
-  // ── Personal notes ───────────────────────
-  const notesHtml = `
-    <div class="wr-section">
-      <div class="wr-section-title">📝 Notas personales</div>
-      <textarea class="wr-notes-area" aria-label="Notas personales de la semana" placeholder="Añade notas para esta semana (solo esta sesión)…"></textarea>
-    </div>`;
+    ${SEP}
 
-  container.innerHTML = `<div class="wr-report">
-    ${headerHtml}
-    ${kpiHtml}
-    ${statsHtml}
-    ${focusHtml}
-    ${okrHtml}
-    ${highlightsHtml}
-    ${pendingTasksHtml}
-    ${notesHtml}
+    <!-- Product Zone -->
+    <div style="margin-bottom:24px">
+      ${sectionTitle('📱','Product Zone')}
+      ${table(COLS, [
+        row('Conversión',   'conv',    'objConv',    'wowConv',    'yoyConv'),
+        row('Tráfico',      'trafico', 'objTrafico', 'wowTrafico', 'yoyTrafico'),
+        row('UPT',          'upt',     'objUpt',     'wowUpt',     null),
+        row('Intros/1K',    'intros1k','objIntros1k','wowIntros1k',null),
+      ])}
+    </div>
+
+    ${SEP}
+
+    <!-- Genius Bar -->
+    <div style="margin-bottom:24px">
+      ${sectionTitle('🔧','Genius Bar')}
+      ${table(COLS, [
+        row('DTA Horas',    'dta',       'objDta',       'wowDta',       null),
+        row('iPhone TAT',   'iphoneTat', 'objIphoneTat', 'wowIphoneTat', null),
+        row('NPS Support',  'npsSupport','objNpsSupport','wowNpsSupport','yoyNpsSupport'),
+        row('NPS APU',      'npsApu',    'objNpsApu',    'wowNpsApu',    'yoyNpsApu'),
+      ])}
+    </div>
+
+    ${SEP}
+
+    <!-- Operaciones -->
+    <div style="margin-bottom:24px">
+      ${sectionTitle('🗂️','Operaciones')}
+      ${table(COLS, [
+        row('Timely',            'timely',         'objTimely',         'wowTimely',         null),
+        row('C&P Usage',         'cpUsage',        'objCpUsage',        'wowCpUsage',        null),
+        row('GB Conv.',          'gbConv',         'objGbConv',         'wowGbConv',         null),
+        row('Intros/Sessions',   'introsSessions', 'objIntrosSessions', 'wowIntrosSessions', null),
+      ])}
+    </div>
+
+    ${SEP}
+
+    <!-- Experiencia de Cliente -->
+    <div style="margin-bottom:24px">
+      ${sectionTitle('🌟','Experiencia de Cliente')}
+      ${table(COLS, [
+        row('NPS Tienda',   'nps',     'objNps',     'wowNps',     'yoyNps'),
+        row('NPS Shopping', 'npsShop', 'objNpsShop', 'wowNpsShop', 'yoyNpsShop'),
+        row('NPS T@A',      'npsTaa',  'objNpsTaa',  'wowNpsTaa',  'yoyNpsTaa'),
+      ])}
+    </div>
+
+    ${SEP}
+
+    <!-- Resumen ejecutivo -->
+    <div style="margin-bottom:8px">
+      ${sectionTitle('📊','Resumen Ejecutivo')}
+      ${execSummary}
+    </div>
+
+    <div style="font-size:11px;color:var(--text-secondary);margin-top:20px;text-align:right">
+      Generado: ${now.toLocaleString('es-ES')}
+    </div>
   </div>`;
 }
 
-// ─── copyReportToClipboard ────────────────────
+// ─── emailWeeklyReport ────────────────────────
 
-export function copyReportToClipboard() {
-  const data = generateReportData();
+export function emailWeeklyReport() {
+  const kpisRaw = load(K.kpis, {});
+  const now = new Date();
+  const mon = getMondayOfWeek(now);
+  const sun = getSundayOfWeek(now);
+  const MESES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const monLabel = `${mon.getDate()} ${MESES_SHORT[mon.getMonth()]}`;
+  const sunLabel = `${sun.getDate()} ${MESES_SHORT[sun.getMonth()]} ${sun.getFullYear()}`;
+  const weekLabel = `${monLabel} – ${sunLabel}`;
+
+  function pn(v) {
+    if (v === undefined || v === null || v === '') return null;
+    const s = String(v).replace(/[^0-9.,\-]/g, '').replace(',', '.');
+    const n = parseFloat(s);
+    return isNaN(n) ? null : n;
+  }
+  function fmt(v) { return (v === undefined || v === null || v === '') ? '—' : String(v); }
+  function pct(val, obj) {
+    const v = pn(val), o = pn(obj);
+    if (v === null || o === null || o === 0) return null;
+    return Math.round((v / o) * 100);
+  }
+  function wowStr(val, wow) {
+    const v = pn(val), w = pn(wow);
+    if (v === null || w === null || w === 0) return '—';
+    const diff = v - w;
+    const p = Math.round((diff / Math.abs(w)) * 100);
+    return diff > 0 ? `▲ +${p}%` : diff < 0 ? `▼ ${p}%` : '— 0%';
+  }
+  function yoyStr(val, yoy) {
+    const v = pn(val), y = pn(yoy);
+    if (v === null || y === null || y === 0) return '—';
+    const diff = v - y;
+    const p = Math.round((diff / Math.abs(y)) * 100);
+    return diff > 0 ? `▲ +${p}%` : diff < 0 ? `▼ ${p}%` : '— 0%';
+  }
+  function pctStr(val, obj) {
+    const p = pct(val, obj);
+    return p !== null ? `${p}%` : '—';
+  }
+
+  const COL_W = [22, 12, 12, 6, 10, 10];
+  function tableRow(cols) {
+    return cols.map((c, i) => String(c).padEnd(COL_W[i] || 12)).join('  ');
+  }
+  function tableHeader() {
+    return tableRow(['Métrica','Actual','Objetivo','%','WoW','YoY']);
+  }
+  function tableSep() {
+    return COL_W.map(w => '─'.repeat(w)).join('  ');
+  }
+  function kpiRow(label, valF, objF, wowF, yoyF) {
+    return tableRow([
+      label,
+      fmt(kpisRaw[valF]),
+      fmt(kpisRaw[objF]),
+      pctStr(kpisRaw[valF], kpisRaw[objF]),
+      wowF ? wowStr(kpisRaw[valF], kpisRaw[wowF]) : '—',
+      yoyF ? yoyStr(kpisRaw[valF], kpisRaw[yoyF]) : '—',
+    ]);
+  }
+
+  const SEP = '━'.repeat(55);
   const lines = [];
-  const SEP = '━'.repeat(51);
 
-  lines.push(`📋 WEEKLY REPORT — ${data.meta.weekLabel}`);
-  lines.push(`Apple · Store Leader · Dashboard`);
+  lines.push(`📋 WEEKLY RECAP — APPLE PASSEIG DE GRÀCIA`);
+  lines.push(`Semana del ${weekLabel} · Diego Rivero, Store Leader`);
   lines.push(SEP);
   lines.push('');
 
-  // KPI ASCII table
-  if (data.kpis.length) {
-    lines.push('📊 KPIs');
-    const col1 = Math.max(18, ...data.kpis.map(k => k.label.length + 1));
-    const header = `┌${'─'.repeat(col1)}┬──────────┬──────────┬─────┬────────┐`;
-    const headRow = `│ ${'Métrica'.padEnd(col1 - 1)}│ Actual   │ Objetivo │  %  │ WoW    │`;
-    const sep =     `├${'─'.repeat(col1)}┼──────────┼──────────┼─────┼────────┤`;
-    const footer =  `└${'─'.repeat(col1)}┴──────────┴──────────┴─────┴────────┘`;
-    lines.push(header);
-    lines.push(headRow);
-    lines.push(sep);
-    for (const kpi of data.kpis) {
-      const actualStr = String(num(kpi.actual)).slice(0, 8);
-      const objStr = kpi.objetivo !== null ? String(num(kpi.objetivo)).slice(0, 8) : '—';
-      const pctStr = kpi.pct !== null ? `${kpi.pct}%` : '—';
-      const wowStr = kpi.wow !== null ? (kpi.wow >= 0 ? `+${kpi.wow.toFixed(1)}%` : `${kpi.wow.toFixed(1)}%`) : '—';
-      lines.push(
-        `│ ${kpi.label.padEnd(col1 - 1)}│ ${actualStr.padEnd(8)} │ ${objStr.padEnd(8)} │ ${pctStr.padStart(3)} │ ${wowStr.padEnd(6)} │`
-      );
-    }
-    lines.push(footer);
-    lines.push('');
-  }
-
-  // Summary
-  const t = data.tasks;
-  const tm = data.team;
-  const mt = data.meetings;
-  lines.push(`✅ TAREAS: ${t.completedThisWeek} completadas · ${t.pending} pendientes · ${t.overdue} vencidas`);
-  lines.push(`👥 EQUIPO: ${tm.oneOnOnesDone} 1:1s · ${tm.feedbackGiven} feedbacks · ${tm.recognitionsThisWeek} reconocimientos`);
-  lines.push(`🗒️ REUNIONES: ${mt.totalThisWeek} reuniones · ${mt.withNotes} con notas`);
+  const notes = kpisRaw.notes || '';
+  lines.push('📝 CONTEXTO DE LA SEMANA');
+  lines.push(notes || '(Sin contexto añadido)');
+  lines.push('');
+  lines.push(SEP);
   lines.push('');
 
-  // OKRs
-  if (data.okrs.globalScore !== null) {
-    lines.push(`🎯 OKRs (${data.okrs.activeQuarter || '—'}): score global ${data.okrs.globalScore.toFixed(2)}`);
-    for (const obj of data.okrs.objectives) {
-      lines.push(`   • ${obj.title}: ${obj.score.toFixed(2)}`);
-    }
-    lines.push('');
-  }
+  lines.push('💰 VENTAS GLOBALES');
+  lines.push(tableHeader());
+  lines.push(tableSep());
+  lines.push(kpiRow('Ventas Totales',   'ventas',        'objVentas',        'wowVentas',        'yoyVentas'));
+  lines.push(kpiRow('Ventas Business',  'ventasBusiness','objVentasBusiness','wowVentasBusiness','yoyVentasBusiness'));
+  lines.push(kpiRow('Ventas APU',       'ventasApu',     'objVentasApu',     'wowVentasApu',     'yoyVentasApu'));
+  lines.push(kpiRow('Ventas SFS',       'ventasSfs',     'objVentasSfs',     'wowVentasSfs',     'yoyVentasSfs'));
+  lines.push('');
 
-  // Highlights
-  if (data.highlights.length) {
-    lines.push('💡 HIGHLIGHTS');
-    for (const h of data.highlights) {
-      lines.push(`• ${h.text}`);
-    }
-    lines.push('');
-  }
+  lines.push('📱 PRODUCT ZONE');
+  lines.push(tableHeader());
+  lines.push(tableSep());
+  lines.push(kpiRow('Conversión',   'conv',    'objConv',    'wowConv',    'yoyConv'));
+  lines.push(kpiRow('Tráfico',      'trafico', 'objTrafico', 'wowTrafico', 'yoyTrafico'));
+  lines.push(kpiRow('UPT',          'upt',     'objUpt',     'wowUpt',     null));
+  lines.push(kpiRow('Intros/1K',    'intros1k','objIntros1k','wowIntros1k',null));
+  lines.push('');
 
+  lines.push('🔧 GENIUS BAR');
+  lines.push(tableHeader());
+  lines.push(tableSep());
+  lines.push(kpiRow('DTA Horas',    'dta',       'objDta',       'wowDta',       null));
+  lines.push(kpiRow('iPhone TAT',   'iphoneTat', 'objIphoneTat', 'wowIphoneTat', null));
+  lines.push(kpiRow('NPS Support',  'npsSupport','objNpsSupport','wowNpsSupport','yoyNpsSupport'));
+  lines.push(kpiRow('NPS APU',      'npsApu',    'objNpsApu',    'wowNpsApu',    'yoyNpsApu'));
+  lines.push('');
+
+  lines.push('🗂️ OPERACIONES');
+  lines.push(tableHeader());
+  lines.push(tableSep());
+  lines.push(kpiRow('Timely',          'timely',        'objTimely',        'wowTimely',        null));
+  lines.push(kpiRow('C&P Usage',       'cpUsage',       'objCpUsage',       'wowCpUsage',       null));
+  lines.push(kpiRow('GB Conv.',        'gbConv',        'objGbConv',        'wowGbConv',        null));
+  lines.push(kpiRow('Intros/Sessions', 'introsSessions','objIntrosSessions','wowIntrosSessions',null));
+  lines.push('');
+
+  lines.push('🌟 EXPERIENCIA DE CLIENTE');
+  lines.push(tableHeader());
+  lines.push(tableSep());
+  lines.push(kpiRow('NPS Tienda',   'nps',     'objNps',     'wowNps',     'yoyNps'));
+  lines.push(kpiRow('NPS Shopping', 'npsShop', 'objNpsShop', 'wowNpsShop', 'yoyNpsShop'));
+  lines.push(kpiRow('NPS T@A',      'npsTaa',  'objNpsTaa',  'wowNpsTaa',  'yoyNpsTaa'));
+  lines.push('');
   lines.push(SEP);
-  lines.push(`Generado: ${data.meta.generatedAt}`);
+  lines.push('');
 
-  const text = lines.join('\n');
-  navigator.clipboard.writeText(text)
-    .then(() => showToast('Informe copiado al clipboard'))
-    .catch(() => showToast('No se pudo copiar al clipboard'));
+  // Executive summary
+  const allKpiPairs = [
+    ['ventas','objVentas'],['ventasBusiness','objVentasBusiness'],['ventasApu','objVentasApu'],['ventasSfs','objVentasSfs'],
+    ['conv','objConv'],['trafico','objTrafico'],['dta','objDta'],['iphoneTat','objIphoneTat'],
+    ['npsSupport','objNpsSupport'],['npsApu','objNpsApu'],['timely','objTimely'],['cpUsage','objCpUsage'],
+    ['gbConv','objGbConv'],['introsSessions','objIntrosSessions'],['nps','objNps'],['npsShop','objNpsShop'],['npsTaa','objNpsTaa'],
+  ];
+  const kpiLabels2 = {
+    ventas:'Ventas Totales',ventasBusiness:'Ventas Business',ventasApu:'Ventas APU',ventasSfs:'Ventas SFS',
+    conv:'Conversión',trafico:'Tráfico',dta:'DTA Horas',iphoneTat:'iPhone TAT',
+    npsSupport:'NPS Support',npsApu:'NPS APU',timely:'Timely',cpUsage:'C&P Usage',
+    gbConv:'GB Conv.',introsSessions:'Intros/Sessions',nps:'NPS Tienda',npsShop:'NPS Shopping',npsTaa:'NPS T@A',
+  };
+  let aboveObj = 0, belowObj = 0, bestKpi = null, bestPct = -Infinity, worstKpi = null, worstPct = Infinity;
+  let wowUp = 0, wowDown = 0;
+  for (const [valF, objF] of allKpiPairs) {
+    const p = pct(kpisRaw[valF], kpisRaw[objF]);
+    if (p !== null) {
+      if (p >= 100) aboveObj++; else belowObj++;
+      if (p > bestPct) { bestPct = p; bestKpi = kpiLabels2[valF]; }
+      if (p < worstPct) { worstPct = p; worstKpi = kpiLabels2[valF]; }
+    }
+    const wowKey = 'wow' + valF.charAt(0).toUpperCase() + valF.slice(1);
+    const v = pn(kpisRaw[valF]), w = pn(kpisRaw[wowKey]);
+    if (v !== null && w !== null && w !== 0) {
+      if (v > w) wowUp++; else if (v < w) wowDown++;
+    }
+  }
+  lines.push('📊 RESUMEN EJECUTIVO');
+  lines.push(`• ${aboveObj} de ${aboveObj + belowObj} KPIs por encima del objetivo`);
+  if (bestKpi) lines.push(`• KPI más fuerte: ${bestKpi} (${bestPct}% del objetivo)`);
+  if (worstKpi && worstKpi !== bestKpi) lines.push(`• KPI que necesita atención: ${worstKpi} (${worstPct}% del objetivo)`);
+  lines.push(`• Tendencia WoW: ${wowUp} mejorando, ${wowDown} empeorando`);
+  lines.push('');
+  lines.push(SEP);
+  lines.push(`Generado: ${now.toLocaleString('es-ES')}`);
+
+  const body = lines.join('\n');
+  const subject = `Weekly Recap — Apple Passeig de Gràcia — Semana del ${weekLabel}`;
+  const encodedSubject = encodeURIComponent(subject);
+  const encodedBody = encodeURIComponent(body);
+  const mailtoUrl = `mailto:?subject=${encodedSubject}&body=${encodedBody}`;
+
+  // mailto: URLs have a ~2000-char limit in many clients; warn user if exceeded
+  if (mailtoUrl.length > 2000) {
+    showToast('⚠️ El informe es muy largo para el enlace de correo. Cópialo manualmente desde el Weekly Report.');
+    navigator.clipboard.writeText(body).catch(() => {});
+    return;
+  }
+
+  try {
+    window.location.href = mailtoUrl;
+  } catch(e) {
+    showToast('No se pudo abrir el cliente de correo');
+  }
 }
 
 // ─── printReport ─────────────────────────────
@@ -610,6 +820,6 @@ export function printReport() {
 
 export function initWeeklyReport() {
   window.renderWeeklyReport = renderWeeklyReport;
-  window.copyReportToClipboard = copyReportToClipboard;
+  window.emailWeeklyReport = emailWeeklyReport;
   window.printReport = printReport;
 }

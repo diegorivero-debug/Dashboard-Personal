@@ -4722,6 +4722,7 @@ function dismissSuggestion(id) {
 
 /* ── Feature 1: Weekly Prep Wizard ── */
 const ROUTINE_STEPS=[
+  {num:0,title:'Cierre de la semana pasada',sub:'Registra los resultados de la semana anterior antes de empezar la nueva'},
   {num:1,title:'Estado del equipo',sub:'Confirma quién está disponible esta semana (vacaciones/ausencias)'},
   {num:2,title:'Tareas de la semana',sub:'Repasa las tareas pendientes de esta semana'},
   {num:3,title:'Reuniones de la semana',sub:'Gestiona los eventos y reuniones de la semana'},
@@ -4759,6 +4760,166 @@ function renderRoutine() {
   if(step<1||step>ROUTINE_STEPS.length) step=1;
   renderRoutineStep(step, container, weekStart);
 }
+
+// ─── Helpers para el cierre semanal ───────────────────────────────────────────
+
+/** Devuelve el lunes de la semana anterior en formato YYYY-MM-DD */
+function getPrevWeekStart() {
+  const mon = getWeekStart(-1);
+  return localDateStr(mon);
+}
+
+/** Formatea una fecha como "31 mar – 6 abr" (etiqueta semana anterior) */
+function fmtPrevWeekLabel() {
+  const prevMon = getWeekStart(-1);
+  const prevSun = new Date(prevMon); prevSun.setDate(prevMon.getDate() + 6);
+  const MESES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const monStr = `${prevMon.getDate()} ${MESES_SHORT[prevMon.getMonth()]}`;
+  const sunStr = `${prevSun.getDate()} ${MESES_SHORT[prevSun.getMonth()]}`;
+  return `${monStr} – ${sunStr}`;
+}
+
+/**
+ * Ejecuta el cierre de semana:
+ * 1. Escribe los valores del formulario en los inputs de KPIs (si se pasan)
+ * 2. Guarda snapshot en el histórico
+ * 3. Guarda notas en apg_weekly_notes
+ * 4. Copia valores actuales a los campos WoW
+ * 5. Limpia los campos de valor actual y notas
+ * 6. Registra la fecha de cierre en apg_last_week_closed
+ */
+function executeWeekClose(formValues) {
+  // 1. Si se pasan valores del formulario, escribirlos en los inputs de KPIs
+  if (formValues) {
+    const fieldMap = {
+      's0-ventas':   'kpi-ventas',
+      's0-obj-ventas': 'kpi-obj-ventas',
+      's0-nps':      'kpi-nps',
+      's0-obj-nps':  'kpi-obj-nps',
+      's0-conv':     'kpi-conv',
+      's0-obj-conv': 'kpi-obj-conv',
+      's0-trafico':  'kpi-trafico',
+      's0-obj-trafico': 'kpi-obj-trafico',
+      's0-dta':      'kpi-dta',
+      's0-obj-dta':  'kpi-obj-dta',
+    };
+    for (const [formId, kpiId] of Object.entries(fieldMap)) {
+      const val = formValues[formId];
+      if (val !== undefined && val !== '') {
+        const el = document.getElementById(kpiId);
+        if (el) el.value = val;
+      }
+    }
+    // Notas
+    const notesEl = document.getElementById('kpi-notes');
+    if (notesEl && formValues['s0-notes']) notesEl.value = formValues['s0-notes'];
+  }
+
+  // Guardar KPIs en localStorage antes de snapshot
+  clearTimeout(_saveKPIsTimer);
+  const kpisData = {
+    ventas:    _g('kpi-ventas'),    objVentas: _g('kpi-obj-ventas'),
+    nps:       _g('kpi-nps'),       objNps:    _g('kpi-obj-nps'),
+    conv:      _g('kpi-conv'),      objConv:   _g('kpi-obj-conv'),
+    upt:       _g('kpi-upt'),       objUpt:    _g('kpi-obj-upt'),
+    acc:       _g('kpi-acc'),       ac:        _g('kpi-ac'),
+    clicount:  _g('kpi-clicount'),  notes:     _g('kpi-notes'),
+    yoyVentas: _g('kpi-yoy-ventas'), wowVentas: _g('kpi-wow-ventas'),
+    yoyNps:    _g('kpi-yoy-nps'),    wowNps:    _g('kpi-wow-nps'),
+    ventasBusiness:    _g('kpi-ventas-business'),    objVentasBusiness: _g('kpi-obj-ventas-business'),
+    yoyVentasBusiness: _g('kpi-yoy-ventas-business'), wowVentasBusiness: _g('kpi-wow-ventas-business'),
+    ventasApu:    _g('kpi-ventas-apu'),    objVentasApu: _g('kpi-obj-ventas-apu'),
+    yoyVentasApu: _g('kpi-yoy-ventas-apu'), wowVentasApu: _g('kpi-wow-ventas-apu'),
+    ventasSfs:    _g('kpi-ventas-sfs'),    objVentasSfs: _g('kpi-obj-ventas-sfs'),
+    yoyVentasSfs: _g('kpi-yoy-ventas-sfs'), wowVentasSfs: _g('kpi-wow-ventas-sfs'),
+    npsShop:    _g('kpi-nps-shopping'),    objNpsShop: _g('kpi-obj-nps-shopping'),
+    yoyNpsShop: _g('kpi-yoy-nps-shopping'), wowNpsShop: _g('kpi-wow-nps-shopping'),
+    npsApu:    _g('kpi-nps-apu'),    objNpsApu: _g('kpi-obj-nps-apu'),
+    yoyNpsApu: _g('kpi-yoy-nps-apu'), wowNpsApu: _g('kpi-wow-nps-apu'),
+    npsSupport:    _g('kpi-nps-support'),    objNpsSupport: _g('kpi-obj-nps-support'),
+    yoyNpsSupport: _g('kpi-yoy-nps-support'), wowNpsSupport: _g('kpi-wow-nps-support'),
+    npsTaa:    _g('kpi-nps-taa'),    objNpsTaa: _g('kpi-obj-nps-taa'),
+    yoyNpsTaa: _g('kpi-yoy-nps-taa'), wowNpsTaa: _g('kpi-wow-nps-taa'),
+    trafico:    _g('kpi-trafico'),    objTrafico: _g('kpi-obj-trafico'),
+    yoyTrafico: _g('kpi-yoy-trafico'), wowTrafico: _g('kpi-wow-trafico'),
+    yoyConv:    _g('kpi-yoy-conv'),   wowConv:    _g('kpi-wow-conv'),
+    dta:        _g('kpi-dta'),        objDta:     _g('kpi-obj-dta'),
+    intros1k:   _g('kpi-intros-1k'), objIntros1k: _g('kpi-obj-intros-1k'),
+    timely:     _g('kpi-timely'),     objTimely:   _g('kpi-obj-timely'),
+    cpUsage:    _g('kpi-cp-usage'),   objCpUsage:  _g('kpi-obj-cp-usage'),
+    gbConv:     _g('kpi-gb-conv'),    objGbConv:   _g('kpi-obj-gb-conv'),
+    introsSessions: _g('kpi-intros-sessions'), objIntrosSessions: _g('kpi-obj-intros-sessions'),
+    iphoneTat:  _g('kpi-iphone-tat'), objIphoneTat: _g('kpi-obj-iphone-tat'),
+  };
+  save(K.kpis, kpisData);
+
+  // 2. Snapshot en el histórico
+  saveKPISnapshot();
+
+  // 3. Archivar notas en apg_weekly_notes
+  const prevWeekOf = getPrevWeekStart();
+  const notes = _g('kpi-notes');
+  const weeklyNotes = load('apg_weekly_notes', []);
+  weeklyNotes.unshift({ weekOf: prevWeekOf, notes: notes, closedAt: new Date().toISOString() });
+  // Conservar máx. 52 semanas
+  if (weeklyNotes.length > 52) weeklyNotes.length = 52;
+  save('apg_weekly_notes', weeklyNotes);
+
+  // 4. Copiar valores actuales a los campos WoW (semana anterior para la nueva semana)
+  const wowMap = [
+    ['kpi-ventas',          'kpi-wow-ventas'],
+    ['kpi-nps',             'kpi-wow-nps'],
+    ['kpi-conv',            'kpi-wow-conv'],
+    ['kpi-trafico',         'kpi-wow-trafico'],
+    ['kpi-ventas-business', 'kpi-wow-ventas-business'],
+    ['kpi-ventas-apu',      'kpi-wow-ventas-apu'],
+    ['kpi-ventas-sfs',      'kpi-wow-ventas-sfs'],
+    ['kpi-nps-shopping',    'kpi-wow-nps-shopping'],
+    ['kpi-nps-apu',         'kpi-wow-nps-apu'],
+    ['kpi-nps-support',     'kpi-wow-nps-support'],
+    ['kpi-nps-taa',         'kpi-wow-nps-taa'],
+  ];
+  for (const [srcId, dstId] of wowMap) {
+    const srcEl = document.getElementById(srcId);
+    const dstEl = document.getElementById(dstId);
+    if (srcEl && dstEl) dstEl.value = srcEl.value;
+  }
+
+  // 5. Limpiar campos de valor actual (NO objetivos, NO YoY, NO WoW)
+  const clearIds = [
+    'kpi-ventas','kpi-nps','kpi-conv','kpi-trafico',
+    'kpi-ventas-business','kpi-ventas-apu','kpi-ventas-sfs',
+    'kpi-nps-shopping','kpi-nps-apu','kpi-nps-support','kpi-nps-taa',
+    'kpi-dta','kpi-upt','kpi-intros-1k','kpi-timely','kpi-cp-usage',
+    'kpi-gb-conv','kpi-intros-sessions','kpi-iphone-tat',
+  ];
+  for (const id of clearIds) {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  }
+  // Limpiar notas
+  const notesEl2 = document.getElementById('kpi-notes');
+  if (notesEl2) notesEl2.value = '';
+
+  // Persistir el estado limpio
+  saveKPIs();
+
+  // 6. Registrar fecha de cierre
+  save('apg_last_week_closed', getWeekStart(0).toISOString().split('T')[0]);
+
+  showToast('✅ Semana cerrada y archivada correctamente');
+}
+
+/** Botón "🔒 Cerrar semana" en la pestaña KPIs — pide confirmación y ejecuta el cierre */
+function confirmCloseWeek() {
+  const prevWeekLabel = fmtPrevWeekLabel();
+  const ok = confirm(`¿Archivar la semana del ${prevWeekLabel}?\n\nLos KPIs y notas se guardarán en el histórico y los campos se limpiarán para la nueva semana.`);
+  if (!ok) return;
+  // Ejecutar el cierre sin pasar formValues (los campos ya están rellenos en la UI)
+  executeWeekClose(null);
+  // Refrescar la vista de KPIs
+  refreshProgressBars();
+}
 function renderRoutineStep(step, container, weekStart) {
   if(!container) container=document.getElementById('routine-content');
   if(!container) return;
@@ -4773,7 +4934,78 @@ function renderRoutineStep(step, container, weekStart) {
   }).join('');
   let content='';
   if(step===1) {
-    // Estado del equipo — sólo managers/leads con filtro de vacaciones
+    // ── STEP 0: Cierre de la semana anterior ────────────────────────
+    const prevWeekLabel = fmtPrevWeekLabel();
+    const lastClosed = load('apg_last_week_closed', null);
+    const currentWeekStart = getWeekStart(0).toISOString().split('T')[0];
+    if (lastClosed === currentWeekStart) {
+      // Semana ya cerrada
+      content = `
+        <div style="text-align:center;padding:24px 0">
+          <div style="font-size:36px;margin-bottom:12px">✅</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:8px">Ya cerraste la semana del ${prevWeekLabel}</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px">Los KPIs y notas están archivados. ¡A por la nueva semana!</div>
+          <button class="btn btn-primary" onclick="renderRoutineStep(2)">Continuar a preparar la semana →</button>
+        </div>`;
+    } else {
+      // Formulario de cierre
+      const kpisRaw = load(K.kpis, {});
+      const fv = (field, def='') => kpisRaw[field] || def;
+      content = `
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="font-size:13px;color:var(--text-secondary)">Registra los resultados de la semana del <strong>${prevWeekLabel}</strong> antes de empezar la nueva.</div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+            <div class="card" style="padding:12px">
+              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">💰 VENTAS TOTALES</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="kpi-editable" id="s0-ventas" placeholder="Valor" value="${esc(fv('ventas'))}" style="flex:1">
+                <span style="font-size:12px;color:var(--text-secondary)">Obj:</span>
+                <input class="kpi-obj-input" id="s0-obj-ventas" placeholder="Obj" value="${esc(fv('objVentas'))}" style="width:80px">
+              </div>
+            </div>
+            <div class="card" style="padding:12px">
+              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">⭐ NPS TIENDA</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="kpi-editable" id="s0-nps" placeholder="Valor" value="${esc(fv('nps'))}" style="flex:1">
+                <span style="font-size:12px;color:var(--text-secondary)">Obj:</span>
+                <input class="kpi-obj-input" id="s0-obj-nps" placeholder="Obj" value="${esc(fv('objNps'))}" style="width:80px">
+              </div>
+            </div>
+            <div class="card" style="padding:12px">
+              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">🔄 CONVERSIÓN</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="kpi-editable" id="s0-conv" placeholder="Valor" value="${esc(fv('conv'))}" style="flex:1">
+                <span style="font-size:12px;color:var(--text-secondary)">Obj:</span>
+                <input class="kpi-obj-input" id="s0-obj-conv" placeholder="Obj" value="${esc(fv('objConv'))}" style="width:80px">
+              </div>
+            </div>
+            <div class="card" style="padding:12px">
+              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">👣 TRÁFICO</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="kpi-editable" id="s0-trafico" placeholder="Valor" value="${esc(fv('trafico'))}" style="flex:1">
+                <span style="font-size:12px;color:var(--text-secondary)">Obj:</span>
+                <input class="kpi-obj-input" id="s0-obj-trafico" placeholder="Obj" value="${esc(fv('objTrafico'))}" style="width:80px">
+              </div>
+            </div>
+            <div class="card" style="padding:12px">
+              <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">⏰ DTA HORAS</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="kpi-editable" id="s0-dta" placeholder="Valor" value="${esc(fv('dta'))}" style="flex:1">
+                <span style="font-size:12px;color:var(--text-secondary)">Obj:</span>
+                <input class="kpi-obj-input" id="s0-obj-dta" placeholder="Obj" value="${esc(fv('objDta'))}" style="width:80px">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📝 ¿Cómo fue la semana? Contexto y análisis de resultados</div>
+            <textarea class="notes-area" id="s0-notes" placeholder="Factores externos, iniciativas, puntos de mejora, highlights..." style="min-height:120px;width:100%">${esc(fv('notes'))}</textarea>
+          </div>
+        </div>`;
+    }
+  } else if(step===2) {
+    // ── STEP 1: Estado del equipo ────────────────────────────────────
     const ausKey = 'apg_routine_ausencias_' + weekStart;
     const ausentes = load(ausKey, []);
     const leaders = typeof equipoLiderazgo !== 'undefined' ? equipoLiderazgo : [];
@@ -4807,8 +5039,8 @@ function renderRoutineStep(step, container, weekStart) {
       ? `<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 6px">🏖️ Ausentes (${absent.length})</div><div style="display:flex;flex-direction:column;gap:6px">${absent.map(m => memberRow(m, true)).join('')}</div>`
       : '';
     content = workingHtml + absentHtml;
-  } else if(step===2) {
-    // Checklist de preparación semanal
+  } else if(step===3) {
+    // ── STEP 2: Tareas de la semana ─────────────────────────────────
     const prepKey = 'apg_prep_checklist_' + weekStart;
     const prepDone = load(prepKey, {});
     const prepHtml = `
@@ -4827,7 +5059,7 @@ function renderRoutineStep(step, container, weekStart) {
     // Tareas de la semana — vista lista o Eisenhower
     const weekTasks=tasks.filter(t=>!t.done&&t.date>=weekStart&&t.date<=weekEndStr).sort((a,b)=>({alta:0,media:1,baja:2}[a.pri]||2)-({alta:0,media:1,baja:2}[b.pri]||2));
     const tasksHtml = weekTasks.length
-      ? `<div style="display:flex;flex-direction:column;gap:6px">${weekTasks.map(t=>`<div class="task-item priority-${t.pri}"><input type="checkbox" class="task-checkbox" onchange="toggleTask(${t.id});renderRoutineStep(2)"><span class="task-text">${esc(t.text)}</span><span class="priority-badge ${t.pri}">${t.pri.toUpperCase()}</span></div>`).join('')}</div>`
+      ? `<div style="display:flex;flex-direction:column;gap:6px">${weekTasks.map(t=>`<div class="task-item priority-${t.pri}"><input type="checkbox" class="task-checkbox" onchange="toggleTask(${t.id});renderRoutineStep(3)"><span class="task-text">${esc(t.text)}</span><span class="priority-badge ${t.pri}">${t.pri.toUpperCase()}</span></div>`).join('')}</div>`
       : '<div style="font-size:14px;color:var(--text-secondary)">No hay tareas asignadas para esta semana. ✅</div>';
 
     const isEis = _routineTaskView === 'eisenhower';
@@ -4852,7 +5084,8 @@ function renderRoutineStep(step, container, weekStart) {
       + viewToggle
       + tasksView
       + quickAddHtml;
-  } else if(step===3) {
+  } else if(step===4) {
+    // ── STEP 3: Reuniones de la semana ──────────────────────────────
     const weekEvts=events.filter(e=>e.date>=weekStart&&e.date<=weekEndStr).sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||'')));
     const weekReus=reuniones.filter(r=>{
       if(!r.datetime) return false;
@@ -4876,7 +5109,7 @@ function renderRoutineStep(step, container, weekStart) {
           return `<div style="padding:8px 10px;background:var(--surface2);border-radius:var(--radius-sm);font-size:13px">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span style="flex:1;min-width:0">${timeStr?`<strong>${timeStr}</strong> · `:''}${esc(r.title)}</span>
-              <select class="task-select" style="font-size:11px" onchange="updateReunion(${r.id},'status',this.value);renderRoutineStep(3)">
+              <select class="task-select" style="font-size:11px" onchange="updateReunion(${r.id},'status',this.value);renderRoutineStep(4)">
                 <option ${r.status==='Programada'?'selected':''} value="Programada">Programada</option>
                 <option ${r.status==='En curso'?'selected':''} value="En curso">En curso</option>
                 <option ${r.status==='Completada'?'selected':''} value="Completada">Completada</option>
@@ -4927,27 +5160,56 @@ function renderRoutineStep(step, container, weekStart) {
         </div>
       </div>`;
     content=`<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px">AGENDA</div>${evtHtml}</div><div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px">REUNIONES TIPO</div>${recHtml}</div><div><div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px">REUNIONES</div>${reuHtml}${addForm}</div>`;
-  } else if(step===4) {
+  } else if(step===5) {
+    // ── STEP 4: Intención de la semana ──────────────────────────────
     const saved=localStorage.getItem('apg_weekly_intention_'+weekStart)||'';
     content=`<textarea class="task-input" id="routine-intention" style="width:100%;min-height:120px;resize:vertical;font-size:15px" placeholder="¿Cuál es tu intención para esta semana?" oninput="localStorage.setItem('apg_weekly_intention_${weekStart}',this.value)">${esc(saved)}</textarea>`;
   }
   const s=ROUTINE_STEPS[step-1];
   const prevBtn=step>1?`<button class="btn btn-ghost" onclick="renderRoutineStep(${step-1})">← Anterior</button>`:'';
-  const nextLabel=step===4?'🚀 Empezar la semana':'✓ '+(step===2?'Revisado':'Confirmado');
-  const nextFn=step===4?`completeRoutine()`:`renderRoutineStep(${step+1})`;
+  const nextLabel=step===5?'🚀 Empezar la semana':'✓ '+(step===3?'Revisado':'Confirmado');
+
+  // Step 1 (cierre): el botón principal es "Cerrar semana y continuar"
+  let nextBtn='';
+  if(step===1) {
+    const lastClosed2 = load('apg_last_week_closed', null);
+    const currentWeekStart2 = getWeekStart(0).toISOString().split('T')[0];
+    if(lastClosed2 === currentWeekStart2) {
+      nextBtn = `<button class="btn btn-primary" onclick="renderRoutineStep(2)">Continuar →</button>`;
+    } else {
+      nextBtn = `<button class="btn btn-primary" onclick="closeWeekFromRoutine()">✅ Cerrar semana y continuar →</button>`;
+    }
+  } else if(step===5) {
+    nextBtn = `<button class="btn btn-primary" onclick="completeRoutine()">🚀 Empezar la semana</button>`;
+  } else {
+    nextBtn = `<button class="btn btn-primary" onclick="renderRoutineStep(${step+1})">${nextLabel}</button>`;
+  }
+
   container.innerHTML=`
     <div class="page-title">📅 Weekly Prep</div>
     <div class="routine-progress">${progressDots}</div>
-    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Paso ${step} de 4</div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Paso ${step} de ${ROUTINE_STEPS.length}</div>
     <div class="routine-step-title">${s.title}</div>
     <div class="routine-step-sub">${s.sub}</div>
     ${step >= 2 ? '<div id="routine-context-kpi"></div>' : ''}
     <div class="routine-step-content">${content}</div>
     <div class="routine-actions">
       ${prevBtn}
-      <button class="btn btn-primary" onclick="${nextFn}">${nextLabel}</button>
+      ${nextBtn}
     </div>`;
   if (step >= 2) try { renderRoutineContextCard(); } catch(e) {}
+}
+
+/** Recoge los valores del formulario de cierre (Step 0/1) y ejecuta el cierre */
+function closeWeekFromRoutine() {
+  const formValues = {};
+  const ids = ['s0-ventas','s0-obj-ventas','s0-nps','s0-obj-nps','s0-conv','s0-obj-conv','s0-trafico','s0-obj-trafico','s0-dta','s0-obj-dta','s0-notes'];
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el) formValues[id] = el.value;
+  }
+  executeWeekClose(formValues);
+  renderRoutineStep(2);
 }
 function changeTeamStatusFromRoutine(memberId, status) {
   const m=team.find(m=>m.id===memberId); if(!m) return;
@@ -4980,7 +5242,7 @@ function toggleRoutineAusente(memberId, weekStart) {
   const idx = ausentes.indexOf(memberId);
   if (idx === -1) ausentes.push(memberId); else ausentes.splice(idx, 1);
   save(ausKey, ausentes);
-  renderRoutineStep(1);
+  renderRoutineStep(2);
 }
 function addRoutineNewMeeting(weekStart) {
   const titleEl = document.getElementById('routine-new-meeting-title');
@@ -5000,7 +5262,7 @@ function addRoutineNewMeeting(weekStart) {
   });
   saveReuniones();
   titleEl.value = '';
-  renderRoutineStep(3);
+  renderRoutineStep(4);
 }
 
 function addRecurringMeetingToWeek(meetingName, meetingDate, meetingTime, meetingDesc, weekStart) {
@@ -5015,13 +5277,13 @@ function addRecurringMeetingToWeek(meetingName, meetingDate, meetingTime, meetin
   };
   events.push(newEvent);
   saveEvents();
-  renderRoutineStep(3, null, weekStart);
+  renderRoutineStep(4, null, weekStart);
 }
 function deleteRoutineReunion(id) {
   if (!confirm('¿Eliminar esta reunión?')) return;
   reuniones = reuniones.filter(r => r.id !== id);
   saveReuniones();
-  renderRoutineStep(3);
+  renderRoutineStep(4);
 }
 function openEditRoutineReunion(id) {
   const formEl = document.getElementById('routine-edit-form-' + id);
@@ -5036,14 +5298,14 @@ function saveEditRoutineReunion(id) {
   if (titleEl && titleEl.value.trim()) r.title = titleEl.value.trim();
   if (dtEl) r.datetime = dtEl.value;
   saveReuniones();
-  renderRoutineStep(3);
+  renderRoutineStep(4);
 }
 function togglePrepItem(itemId, weekStart) {
   const key = 'apg_prep_checklist_' + weekStart;
   const done = load(key, {});
   done[itemId] = !done[itemId];
   save(key, done);
-  renderRoutineStep(2);
+  renderRoutineStep(3);
 }
 function addRoutineQuickTask(weekStart) {
   const inp = document.getElementById('routine-quick-task');
@@ -5075,7 +5337,7 @@ function addRoutineQuickTask(weekStart) {
   const iel = document.getElementById('routine-quick-importante');
   if (uel) uel.checked = false;
   if (iel) iel.checked = false;
-  renderRoutineStep(2);
+  renderRoutineStep(3);
 }
 function completeRoutine() {
   const weekStart=getWeekStart(0).toISOString().split('T')[0];
@@ -8071,7 +8333,7 @@ function eisDrop(e, urgente, importante) {
 function setRoutineTaskView(mode) {
   _routineTaskView = mode;
   save('apg_routine_eis_view', mode);
-  renderRoutineStep(2);
+  renderRoutineStep(3);
 }
 
 function renderRoutineEisenhower(weekStart) {
@@ -8089,7 +8351,7 @@ function renderRoutineEisenhower(weekStart) {
     const qTasks = pending.filter(t => isUrgente(t) === q.u && isImportante(t) === q.i);
     const items = qTasks.length
       ? qTasks.map(t => `<div draggable="true" ondragstart="routineEisDragStart(event,${t.id})" style="display:flex;align-items:flex-start;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);font-size:13px;cursor:grab">
-          <input type="checkbox" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)" onchange="toggleTask(${t.id});renderRoutineStep(2)">
+          <input type="checkbox" style="margin-top:2px;flex-shrink:0;accent-color:var(--accent)" onchange="toggleTask(${t.id});renderRoutineStep(3)">
           <span>${esc(t.text)}</span>
         </div>`).join('')
       : `<div style="font-size:12px;color:var(--text-secondary);padding-top:8px">Sin tareas</div>`;
@@ -8131,7 +8393,7 @@ function routineEisDrop(e, urgente, importante, weekStart) {
   else task.pri = 'baja';
   saveTasks();
   _routineEisDragTaskId = null;
-  renderRoutineStep(2);
+  renderRoutineStep(3);
 }
 
 /* Hook into existing init flow — extend renderTasks and addTask */
