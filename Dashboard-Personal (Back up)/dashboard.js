@@ -189,10 +189,7 @@ async function _initBoxSync() {
         const lsBackup  = parseInt(localStorage.getItem('apg_last_backup') || '0', 10);
         if (fileSaved > lsBackup) {
           // File is newer — import into localStorage
-          Object.keys(parsed.data).filter(k => k.startsWith('apg_')).forEach(key => {
-            try { localStorage.setItem(key, JSON.stringify(parsed.data[key])); }
-            catch(err) { console.warn('Box import key error:', key, err); }
-          });
+          _boxApplyData(parsed.data);
           localStorage.setItem('apg_last_backup', fileSaved.toString());
         } else {
           // localStorage is newer — push to file
@@ -235,7 +232,8 @@ function _showBoxSyncPopup() {
 
   const syncedName = _boxFileHandle ? _boxFileHandle.name : (localStorage.getItem('apg_box_sync_name') || null);
   const rawTime    = localStorage.getItem('apg_box_sync_time');
-  const syncedTimeObj = _boxLastSync || (rawTime ? (function(){ try { return new Date(rawTime); } catch(_){ return null; } }()) : null);
+  let syncedTimeObj = _boxLastSync;
+  if (!syncedTimeObj && rawTime) { try { syncedTimeObj = new Date(rawTime); } catch(_) {} }
   const lastSyncText  = syncedTimeObj ? _fmtRelativeTime(syncedTimeObj) : null;
   const isLinked      = !!syncedName;
 
@@ -317,16 +315,13 @@ async function _boxLinkFile() {
       const file = e.target.files[0];
       if (!file) return;
       const btn = document.getElementById('box-sync-btn');
-      btn && (btn.classList.remove('error'), btn.classList.add('syncing'));
+      if (btn) { btn.classList.remove('error'); btn.classList.add('syncing'); }
       const reader = new FileReader();
       reader.onload = (ev) => {
         try {
           const parsed = JSON.parse(ev.target.result);
           if (parsed && parsed.data && typeof parsed.data === 'object') {
-            Object.keys(parsed.data).filter(k => k.startsWith('apg_')).forEach(key => {
-              try { localStorage.setItem(key, JSON.stringify(parsed.data[key])); }
-              catch(err) { console.warn('Box import key error:', key, err); }
-            });
+            _boxApplyData(parsed.data);
           }
           _boxLastSync = new Date();
           localStorage.setItem('apg_box_sync_name', file.name);
@@ -352,7 +347,7 @@ async function _boxImportFromFile() {
   if (_boxFileHandle) {
     // File System Access API
     try {
-      btn && (btn.classList.remove('synced', 'error'), btn.classList.add('syncing'));
+      if (btn) { btn.classList.remove('synced', 'error'); btn.classList.add('syncing'); }
       const file = await _boxFileHandle.getFile();
       const text = await file.text();
       const parsed = JSON.parse(text);
@@ -361,10 +356,7 @@ async function _boxImportFromFile() {
         if (btn) { btn.classList.remove('syncing'); btn.classList.add('error'); }
         return;
       }
-      Object.keys(parsed.data).filter(k => k.startsWith('apg_')).forEach(key => {
-        try { localStorage.setItem(key, JSON.stringify(parsed.data[key])); }
-        catch(err) { console.warn('Box import key error:', key, err); }
-      });
+      _boxApplyData(parsed.data);
       _boxLastSync = new Date();
       localStorage.setItem('apg_box_sync_time', _boxLastSync.toISOString());
       if (btn) { btn.classList.remove('syncing', 'error'); btn.classList.add('synced'); }
@@ -383,7 +375,7 @@ async function _boxImportFromFile() {
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      btn && (btn.classList.remove('synced', 'error'), btn.classList.add('syncing'));
+      if (btn) { btn.classList.remove('synced', 'error'); btn.classList.add('syncing'); }
       const reader = new FileReader();
       reader.onload = (ev) => {
         try {
@@ -393,10 +385,7 @@ async function _boxImportFromFile() {
             if (btn) { btn.classList.remove('syncing'); btn.classList.add('error'); }
             return;
           }
-          Object.keys(parsed.data).filter(k => k.startsWith('apg_')).forEach(key => {
-            try { localStorage.setItem(key, JSON.stringify(parsed.data[key])); }
-            catch(err) { console.warn('Box import key error:', key, err); }
-          });
+          _boxApplyData(parsed.data);
           _boxLastSync = new Date();
           localStorage.setItem('apg_box_sync_name', file.name);
           localStorage.setItem('apg_box_sync_time', _boxLastSync.toISOString());
@@ -426,7 +415,7 @@ async function _boxExportToFile() {
   } else {
     // Fallback — trigger download; user saves it to their Box folder manually
     try {
-      btn && (btn.classList.remove('synced', 'error'), btn.classList.add('syncing'));
+      if (btn) { btn.classList.remove('synced', 'error'); btn.classList.add('syncing'); }
       const json     = JSON.stringify(_buildFileSyncPayload(), null, 2);
       const blob     = new Blob([json], { type: 'application/json' });
       const url      = URL.createObjectURL(blob);
@@ -448,6 +437,14 @@ async function _boxExportToFile() {
   }
 }
 
+/* Apply parsed Box file data object to localStorage */
+function _boxApplyData(data) {
+  Object.keys(data).filter(k => k.startsWith('apg_')).forEach(key => {
+    try { localStorage.setItem(key, JSON.stringify(data[key])); }
+    catch(err) { console.warn('Box import key error:', key, err); }
+  });
+}
+
 /* Helper: after linking via File System Access API, auto-import or init the file */
 async function _boxImportOrInitFile(handle) {
   try {
@@ -459,10 +456,7 @@ async function _boxImportOrInitFile(handle) {
       const fileSaved = parsed._meta.lastSaved ? new Date(parsed._meta.lastSaved).getTime() : 0;
       const lsBackup  = parseInt(localStorage.getItem('apg_last_backup') || '0', 10);
       if (fileSaved > lsBackup) {
-        Object.keys(parsed.data).filter(k => k.startsWith('apg_')).forEach(key => {
-          try { localStorage.setItem(key, JSON.stringify(parsed.data[key])); }
-          catch(err) { console.warn('Box import key error:', key, err); }
-        });
+        _boxApplyData(parsed.data);
         localStorage.setItem('apg_last_backup', fileSaved.toString());
       } else {
         await _writeToFile();
