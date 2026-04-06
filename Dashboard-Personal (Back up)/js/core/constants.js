@@ -43,28 +43,44 @@ export const K = {
 // % of AC+ goal below which an alert is shown
 export const AC_ALERT_THRESHOLD = 60;
 
-// ⚠️  Datos de ejemplo genéricos — sustituir por nombres reales en config.js
-//     No incluir datos personales reales en este archivo (repositorio público).
+// Equipo Apple Passeig de Gràcia — Q2 FY26
+// Roles: "Sr. Manager", "Manager", "Store Leader", "Ops Lead", "Lead", "Lead Genius"
+// Los Leads (ids 20-26) tienen manager vacío y solo aparecen en vacaciones/festivos.
 export const equipoLiderazgo = [
-  { id: 1,  nombre: "Sr. Manager A",   rol: "Sr. Manager",  manager: "Store Leader B", email: "" },
-  { id: 2,  nombre: "Manager A",       rol: "Manager",      manager: "Store Leader A", email: "" },
-  { id: 3,  nombre: "Manager B",       rol: "Manager",      manager: "Store Leader A", email: "" },
-  { id: 4,  nombre: "Manager C",       rol: "Manager",      manager: "Store Leader A", email: "" },
-  { id: 5,  nombre: "Sr. Manager B",   rol: "Sr. Manager",  manager: "Store Leader A", email: "" },
-  { id: 6,  nombre: "Manager D",       rol: "Manager",      manager: "Store Leader A", email: "" },
-  { id: 7,  nombre: "Manager E",       rol: "Manager",      manager: "Store Leader A", email: "" },
-  { id: 8,  nombre: "Manager F",       rol: "Manager",      manager: "Store Leader B", email: "" },
-  { id: 9,  nombre: "Sr. Manager C",   rol: "Sr. Manager",  manager: "Store Leader B", email: "" },
-  { id: 10, nombre: "Manager G",       rol: "Manager",      manager: "Store Leader B", email: "" },
-  { id: 11, nombre: "Manager H",       rol: "Manager",      manager: "Store Leader A", email: "" },
-  { id: 12, nombre: "Manager I",       rol: "Manager",      manager: "Store Leader A", email: "" },
-  { id: 13, nombre: "Sr. Manager D",   rol: "Sr. Manager",  manager: "Store Leader A", email: "" },
-  { id: 14, nombre: "Manager J",       rol: "Manager",      manager: "Store Leader B", email: "" },
-  { id: 15, nombre: "Manager K",       rol: "Manager",      manager: "Store Leader B", email: "" },
-  { id: 16, nombre: "Manager L",       rol: "Manager",      manager: "Store Leader B", email: "" },
-  { id: 17, nombre: "Manager M",       rol: "Manager",      manager: "Store Leader B", email: "" },
-  { id: 18, nombre: "Store Leader B",  rol: "Store Leader", manager: "Market Leader",  email: "" },
-  { id: 19, nombre: "Store Leader A",  rol: "Store Leader", manager: "Market Leader",  email: "" },
+
+  // ── Grupo 1: Reportan a Diego Rivero (9 personas) ─────────────────────────
+  { id: 1,  nombre: "Cristina Carcel",  rol: "Sr. Manager",  manager: "Diego Rivero",  email: "criscarcel@apple.com" },
+  { id: 2,  nombre: "Itziar Cacho",     rol: "Sr. Manager",  manager: "Diego Rivero",  email: "icacholega@apple.com" },
+  { id: 3,  nombre: "Meri Alvarez",     rol: "Manager",      manager: "Diego Rivero",  email: "malvarezmart@apple.com" },
+  { id: 4,  nombre: "David Carrillo",   rol: "Manager",      manager: "Diego Rivero",  email: "davidcarrillo@apple.com" },
+  { id: 5,  nombre: "Ricardo Sosa",     rol: "Manager",      manager: "Diego Rivero",  email: "rsosapole@apple.com" },
+  { id: 6,  nombre: "Ana Maria Pazos",  rol: "Manager",      manager: "Diego Rivero",  email: "apazosrevuelt@apple.com" },
+  { id: 7,  nombre: "Javi Canfranc",    rol: "Manager",      manager: "Diego Rivero",  email: "jcanfranc@apple.com" },
+  { id: 8,  nombre: "Javi Sanchez",     rol: "Manager",      manager: "Diego Rivero",  email: "javisanch@apple.com" },
+  { id: 9,  nombre: "Javier Quiros",    rol: "Manager",      manager: "Diego Rivero",  email: "jquirosgomez@apple.com" },
+
+  // ── Grupo 2: Reportan a Jordi Pajares (8 personas) ────────────────────────
+  { id: 10, nombre: "Sheila Yubero",    rol: "Sr. Manager",  manager: "Jordi Pajares", email: "syuberoarruga@apple.com" },
+  { id: 11, nombre: "Toni Medina",      rol: "Manager",      manager: "Jordi Pajares", email: "toni@apple.com" },
+  { id: 12, nombre: "Jorge Gil",        rol: "Sr. Manager",  manager: "Jordi Pajares", email: "jorgegil@apple.com" },
+  { id: 13, nombre: "Pedro Borlido",    rol: "Manager",      manager: "Jordi Pajares", email: "pbd@apple.com" },
+  { id: 14, nombre: "Jesus Pazos",      rol: "Manager",      manager: "Jordi Pajares", email: "j_pazos@apple.com" },
+  { id: 15, nombre: "Deborah Ibañez",   rol: "Manager",      manager: "Jordi Pajares", email: "deborah_ibanezroc@apple.com" },
+  { id: 16, nombre: "Cristina Uson",    rol: "Manager",      manager: "Jordi Pajares", email: "c_uson@apple.com" },
+  { id: 17, nombre: "Julie Robin",      rol: "Manager",      manager: "Jordi Pajares", email: "jrobin2@apple.com" },
+
+  // ── Grupo 3: Store Leaders (2 personas) ───────────────────────────────────
+  { id: 18, nombre: "Diego Rivero",     rol: "Store Leader", manager: "",              email: "driveroabascal@apple.com" },
+  { id: 19, nombre: "Jordi Pajares",    rol: "Store Leader", manager: "",              email: "jpajaresfurn@apple.com" },
+
+  // ── Grupo 4: Leads — solo vacaciones/festivos, no en conexiones ni desarrollo ──
+  { id: 20, nombre: "Aurora Comesaña",  rol: "Ops Lead",     manager: "",              email: "comesanya@apple.com" },
+  { id: 21, nombre: "Rubén Martínez",   rol: "Ops Lead",     manager: "",              email: "rnezmodi@apple.com" },
+  { id: 22, nombre: "Clara Gonzalez",   rol: "Lead",         manager: "",              email: "clara@apple.com" },
+  { id: 23, nombre: "Elisabet Moreno",  rol: "Lead",         manager: "",              email: "emorenolop@apple.com" },
+  { id: 24, nombre: "Eva Famoso",       rol: "Lead Genius",  manager: "",              email: "efamoso@apple.com" },
+  { id: 25, nombre: "Eva Hernandez",    rol: "Lead Genius",  manager: "",              email: "hernandez.ev@apple.com" },
+  { id: 26, nombre: "Alberto Ortiz",    rol: "Lead Genius",  manager: "",              email: "aortizpastor@apple.com" },
 ];
 
 // Fallback recurring meetings — used only when config.js is not loaded
